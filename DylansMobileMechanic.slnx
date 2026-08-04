@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="dylansmobilemechanic.client/dylansmobilemechanic.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="DylansMobileMechanic.Server/DylansMobileMechanic.Server.csproj" />
+</Solution>
