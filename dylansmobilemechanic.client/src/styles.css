@@ -699,8 +699,14 @@
   .bay { --chamfer: 18px; }
   .bay__head { padding: 12px 16px; font-size: 9.5px; letter-spacing: 0.12em; }
   .bay__stage { padding: 20px 16px 14px; }
-  .bay__cross,
-  .bay__ring { display: none; }
+  /* Crosshairs stay off (fine registration marks read as clutter this
+     small); the double-ring effect stays on — it was hidden here too,
+     which is the actual bug this fixes. Ring width is already a
+     percentage of .bay__stage (min(74%,420px) / min(52%,300px)), so it
+     scales down naturally with the smaller mobile bay — no separate
+     mobile sizing needed. .bay's own clip-path keeps any edge overflow
+     contained within the panel, so there's no page-overflow risk. */
+  .bay__cross { display: none; }
   .bay__route, .bay__legend { margin-left: 16px; margin-right: 16px; }
 }
 
