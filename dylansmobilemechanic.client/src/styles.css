@@ -1474,5 +1474,24 @@
 @media (max-width: 520px) {
   .foot { padding-top: 46px; }
   .foot__inner { grid-template-columns: minmax(0, 1fr); gap: 30px; }
-  .foot__bar { justify-content: flex-start; }
+
+  .foot__brand,
+  .foot__col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .foot__desc { max-width: 40ch; }
+
+  .foot__social,
+  .foot__links { justify-content: center; }
+  .foot__links { justify-items: center; }
+
+  .foot__bar {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
 }
