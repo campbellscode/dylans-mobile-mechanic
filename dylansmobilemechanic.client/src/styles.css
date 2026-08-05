@@ -49,8 +49,9 @@
   transition: opacity var(--ease);
 }
 .nav__brand img {
-  height: clamp(46px, 4.4vw, 62px);
+  height: clamp(54px, 5vw, 70px);
   width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 .nav__brand:hover { opacity: 0.82; }
