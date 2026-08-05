@@ -1,4 +1,5 @@
 import Stage from './Stage';
+import Reveal from './Reveal';
 
 const VALUES = [
   { term: 'Convenience', desc: 'Service that works around your life' },
@@ -27,35 +28,37 @@ export default function About() {
             lead="Dylan's Mobile Mechanic started from a simple frustration: auto repair shouldn't cost you a whole day in a shop waiting room."
           />
 
-          <p className="about__body">
+          <Reveal as="p" variant="rise" delay={80} className="about__body">
             Whether you&rsquo;re at home, at work, or stuck somewhere unexpected, the workshop comes to
             you. With professional training, quality tools, and a habit of doing the job properly,
             Dylan delivers dealership-grade work at a fair price — without the overhead or the runaround.
-          </p>
+          </Reveal>
 
-          <dl className="facts">
+          <Reveal as="dl" variant="rise" delay={160} className="facts">
             {FACTS.map((f) => (
               <div key={f.label} className="facts__item">
                 <dt className="facts__value">{f.value}</dt>
                 <dd className="facts__label">{f.label}</dd>
               </div>
             ))}
-          </dl>
+          </Reveal>
         </div>
 
-        <div className="commitment panel">
+        {/* Calmer than the rest of the page: one settle, then the values
+            follow in a short, quiet stagger — no technical flourish */}
+        <Reveal variant="lock" delay={120} className="commitment panel">
           <span className="edge" aria-hidden="true" />
           <h3 className="commitment__title">Our Commitment</h3>
           <ol className="commitment__list">
             {VALUES.map((v, i) => (
-              <li key={v.term} className="commitment__row">
+              <Reveal key={v.term} as="li" variant="rise" index={i} step={60} delay={200} className="commitment__row">
                 <span className="commitment__idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 <span className="commitment__term">{v.term}</span>
                 <span className="commitment__desc">{v.desc}</span>
-              </li>
+              </Reveal>
             ))}
           </ol>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

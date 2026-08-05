@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Stage from './Stage';
+import Reveal from './Reveal';
 
 const SERVICE_OPTIONS = [
   'Diagnostics',
@@ -84,19 +85,21 @@ export default function Contact() {
             lead="Send the details and Dylan will come back with a quote — no obligation, no pressure, no sales script."
           />
 
+          {/* Each step activates after the previous one — the same route
+              idea as the rest of the page, in miniature */}
           <ol className="next">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="next__step">
+              <Reveal key={s.title} as="li" variant="rise" index={i} step={90} className="next__step">
                 <span className="next__node" aria-hidden="true">{i + 1}</span>
                 <div className="next__body">
                   <h3 className="next__title">{s.title}</h3>
                   <p className="next__desc">{s.desc}</p>
                 </div>
-              </li>
+              </Reveal>
             ))}
           </ol>
 
-          <ul className="quote__contact">
+          <Reveal as="ul" variant="rise" delay={320} className="quote__contact">
             <li className="quote__contact-item">
               <span className="quote__contact-icon"><PhoneIcon /></span>
               <span>
@@ -118,11 +121,12 @@ export default function Contact() {
                 <span className="quote__contact-value">{HOURS}</span>
               </span>
             </li>
-          </ul>
+          </Reveal>
         </div>
 
-        {/* ---------- The form ---------- */}
-        <div className="quote__form panel">
+        {/* ---------- The form: settles into place as one panel, fields
+            stagger lightly inside it once it's in view ---------- */}
+        <Reveal variant="lock" delay={80} className="quote__form panel">
           <span className="edge" aria-hidden="true" />
 
           {ready ? (
@@ -148,7 +152,7 @@ export default function Contact() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate={false}>
-              <fieldset className="fieldset">
+              <Reveal as="fieldset" variant="rise" index={0} step={60} className="fieldset">
                 <legend className="fieldset__legend">Your contact</legend>
 
                 <div className="field-row">
@@ -169,9 +173,9 @@ export default function Contact() {
                   <input id="email" name="email" className="field__input" type="email"
                     autoComplete="email" value={form.email} onChange={set('email')} />
                 </div>
-              </fieldset>
+              </Reveal>
 
-              <fieldset className="fieldset">
+              <Reveal as="fieldset" variant="rise" index={1} step={60} className="fieldset">
                 <legend className="fieldset__legend">Your vehicle</legend>
 
                 <div className="field">
@@ -194,18 +198,18 @@ export default function Contact() {
                   <textarea id="message" name="message" className="field__input field__textarea" rows={4}
                     placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
                 </div>
-              </fieldset>
+              </Reveal>
 
-              <div className="quote__submit">
+              <Reveal as="div" variant="rise" index={2} step={60} className="quote__submit">
                 <button type="submit" className="btn btn--primary btn--lg btn--block">Request My Quote</button>
                 <p className="quote__note">
                   <span aria-hidden="true">*</span> Required. Prefer to talk?{' '}
                   <a href={`tel:${PHONE_HREF}`} className="quote__note-link">Call {PHONE_DISPLAY}</a>.
                 </p>
-              </div>
+              </Reveal>
             </form>
           )}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

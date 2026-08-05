@@ -60,6 +60,8 @@
 
   /* ---- Motion ---- */
   --ease: 0.22s cubic-bezier(0.32, 0, 0.16, 1);
+  /* Scroll-reveal curve: precise settle, no overshoot */
+  --ease-motion: cubic-bezier(0.22, 1, 0.36, 1);
 
   font-family: var(--font);
   font-size: 16px;
@@ -221,6 +223,23 @@ section[id] { scroll-margin-top: 84px; }
   text-wrap: pretty;
 }
 
+/* ---- Stage's own reveal: label -> heading -> lead, once, on scroll ----
+   Self-contained (Stage calls the hook itself), so every section header
+   sitewide animates identically without being wrapped from outside. */
+.stage.reveal .stage__mark,
+.stage.reveal .stage__label,
+.stage.reveal .stage__title,
+.stage.reveal .stage__lead {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s var(--ease-motion), transform 0.6s var(--ease-motion);
+}
+.stage.reveal.is-visible .stage__mark  { opacity: 1; transform: none; transition-delay: 0ms; }
+.stage.reveal.is-visible .stage__label { opacity: 1; transform: none; transition-delay: 70ms; }
+.stage.reveal.is-visible .stage__title { opacity: 1; transform: none; transition-delay: 140ms; }
+.stage.reveal.is-visible .stage__lead  { opacity: 1; transform: none; transition-delay: 260ms; }
+.stage.reveal.is-visible .stage__node  { animation: statusPing 0.6s ease-out 220ms backwards; }
+
 
 /* =============================================
    CHAMFERED PANEL — the house shape
@@ -319,6 +338,59 @@ section[id] { scroll-margin-top: 84px; }
   outline-offset: 3px;
 }
 .btn:focus-visible { outline-offset: 4px; }
+
+
+/* =============================================
+   SCROLL REVEAL — one shared entrance system, page-wide.
+   Fires once via IntersectionObserver (see Reveal.jsx / Stage.jsx),
+   never replays. Every section uses one of four variants so the whole
+   page reads as a single coordinated motion, not per-section effects.
+   ============================================= */
+.reveal {
+  transition-property: opacity, transform;
+  transition-duration: 0.6s;
+  transition-timing-function: var(--ease-motion);
+  transition-delay: var(--delay, 0ms);
+}
+
+.reveal--rise       { opacity: 0; transform: translateY(24px); }
+.reveal--slide-left  { opacity: 0; transform: translateX(-32px); }
+.reveal--slide-right { opacity: 0; transform: translateX(32px); }
+.reveal--lock {
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transition-duration: 0.72s;
+}
+
+.reveal.is-visible { opacity: 1; transform: none; }
+
+/* Neutral wrapper for revealing a single interactive control (a .btn,
+   a link) without touching its own hover/focus transition — see
+   Services, ServiceArea and Contact for usage */
+.reveal-inline { display: inline-block; max-width: 100%; }
+.reveal-inline--block { display: block; width: 100%; }
+
+/* Status Activation — a status light or step node lights up once, a
+   beat after its container settles. `backwards` fill so hover states
+   (which also touch box-shadow) resume normal control afterward. */
+.reveal.is-visible .status-dot,
+.reveal.is-visible .next__node {
+  animation: statusPing 0.6s ease-out backwards;
+  animation-delay: calc(var(--delay, 0ms) + 220ms);
+}
+@keyframes statusPing {
+  0%   { box-shadow: 0 0 0 0 rgba(156, 182, 58, 0.55); }
+  100% { box-shadow: 0 0 0 8px rgba(156, 182, 58, 0); }
+}
+
+@media (max-width: 640px), (pointer: coarse) and (hover: none) {
+  /* Reduce travel and keep everything vertical so nothing can
+     contribute to horizontal overflow on touch devices */
+  .reveal--slide-left,
+  .reveal--slide-right { transform: translateY(18px); }
+  .reveal--rise         { transform: translateY(16px); }
+  .reveal--lock          { transform: translateY(12px) scale(0.97); }
+}
 
 
 /* =============================================

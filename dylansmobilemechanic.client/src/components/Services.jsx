@@ -1,4 +1,5 @@
 import Stage from './Stage';
+import Reveal from './Reveal';
 
 /**
  * Service bays. `span` drives the desktop board layout on a 12-column grid
@@ -110,23 +111,29 @@ export default function Services() {
 
         <div className="board">
           {SERVICES.map((s, i) => (
-            <article key={s.title} className={`bay-card panel span-${s.span}`}>
-              <span className="edge" aria-hidden="true" />
+            // Reveal wraps the card rather than styling it directly — the
+            // card already owns its own hover transition, so keeping the
+            // entrance transition on a separate element avoids the two
+            // fighting over `transform`.
+            <Reveal key={s.title} variant="lock" index={i} className={`span-${s.span}`}>
+              <article className="bay-card panel">
+                <span className="edge" aria-hidden="true" />
 
-              <div className="bay-card__head">
-                <span className="bay-card__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                <span className="bay-card__rule" aria-hidden="true" />
-                <span className="bay-card__icon" aria-hidden="true">{s.icon}</span>
-              </div>
+                <div className="bay-card__head">
+                  <span className="bay-card__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="bay-card__rule" aria-hidden="true" />
+                  <span className="bay-card__icon" aria-hidden="true">{s.icon}</span>
+                </div>
 
-              <h3 className="bay-card__title">{s.title}</h3>
-              <p className="bay-card__desc">{s.desc}</p>
+                <h3 className="bay-card__title">{s.title}</h3>
+                <p className="bay-card__desc">{s.desc}</p>
 
-              <p className="bay-card__tag">
-                <span className="status-dot" aria-hidden="true" />
-                {s.tag}
-              </p>
-            </article>
+                <p className="bay-card__tag">
+                  <span className="status-dot" aria-hidden="true" />
+                  {s.tag}
+                </p>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>

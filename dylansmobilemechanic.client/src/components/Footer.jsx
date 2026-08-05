@@ -1,4 +1,5 @@
 import logo from '../assets/logo-8.png';
+import Reveal from './Reveal';
 
 const PHONE_DISPLAY = '(555) 123-4567';
 const PHONE_HREF = '+15551234567';
@@ -10,7 +11,7 @@ export default function Footer() {
   return (
     <footer className="foot">
       <div className="container foot__inner">
-        <div className="foot__brand">
+        <Reveal as="div" variant="rise" index={0} step={80} className="foot__brand">
           <img
             src={logo}
             alt="Dylan's Mobile Mechanic"
@@ -40,9 +41,9 @@ export default function Footer() {
               </svg>
             </a>
           </div>
-        </div>
+        </Reveal>
 
-        <nav className="foot__col" aria-label="Footer">
+        <Reveal as="nav" variant="rise" index={1} step={80} className="foot__col" aria-label="Footer">
           <h2 className="foot__col-title">Site</h2>
           <ul className="foot__links">
             <li><a href="#home">Home</a></li>
@@ -50,9 +51,9 @@ export default function Footer() {
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Request a Quote</a></li>
           </ul>
-        </nav>
+        </Reveal>
 
-        <div className="foot__col">
+        <Reveal as="div" variant="rise" index={2} step={80} className="foot__col">
           <h2 className="foot__col-title">Dispatch</h2>
           <ul className="foot__links">
             <li><a href={`tel:${PHONE_HREF}`}>{PHONE_DISPLAY}</a></li>
@@ -60,7 +61,7 @@ export default function Footer() {
           </ul>
           <p className="foot__meta">Cincinnati &amp; Northern Kentucky</p>
           <p className="foot__meta">Mon–Sat, 7am – 7pm</p>
-        </div>
+        </Reveal>
       </div>
 
       <div className="container foot__bar">

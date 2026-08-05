@@ -1,4 +1,5 @@
 import Stage from './Stage';
+import Reveal from './Reveal';
 
 const STANDARDS = [
   {
@@ -73,14 +74,14 @@ export default function WhyChooseUs() {
 
         <ol className="checklist">
           {STANDARDS.map((s, i) => (
-            <li key={s.title} className="check">
+            <Reveal key={s.title} as="li" variant="rise" index={i} step={80} className="check">
               <span className="check__idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
               <span className="check__icon" aria-hidden="true">{s.icon}</span>
               <div className="check__body">
                 <h3 className="check__title">{s.title}</h3>
                 <p className="check__desc">{s.desc}</p>
               </div>
-            </li>
+            </Reveal>
           ))}
         </ol>
       </div>
