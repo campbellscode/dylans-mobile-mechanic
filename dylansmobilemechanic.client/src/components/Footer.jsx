@@ -1,4 +1,4 @@
-import logo from '../assets/logo-8.png';
+import logo from '../assets/logo-10.png';
 import Reveal from './Reveal';
 
 const PHONE_DISPLAY = '(555) 123-4567';
