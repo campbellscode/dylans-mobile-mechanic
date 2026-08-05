@@ -139,11 +139,12 @@
 /* Reuses .foot__social-link for the buttons themselves — only the row
    centering is specific to the mobile menu. Vertical spacing between
    this row and its neighbors comes from .nav__menu-inner's gap.
-   Hidden by default: it reused .foot__social's `display: flex` with
-   no desktop override, so it was rendering inside .nav__menu-inner at
-   every width. Shown only at the same ≤1024px breakpoint as the
-   hamburger/mobile-menu system, below. */
-.nav__social {
+   Hidden by default. Qualified with .nav__menu so its specificity
+   (0,0,2,0) beats .foot__social's bare `display: flex` (0,0,1,0) —
+   a plain `.nav__social { display: none }` loses that tie because
+   .foot__social's rule sits later in this file (footer section), and
+   CSS breaks equal-specificity ties by source order. */
+.nav__menu .nav__social {
   display: none;
   justify-content: center;
 }
@@ -154,7 +155,7 @@
   .nav__toggle { display: flex; }
   .nav__cta--desktop { display: none; }
   .nav__cta--mobile { display: inline-flex; }
-  .nav__social { display: flex; }
+  .nav__menu .nav__social { display: flex; }
 
   /* Outer panel: fixed below the navbar, fills to the viewport bottom,
      and becomes the scroll container on short/landscape screens */
