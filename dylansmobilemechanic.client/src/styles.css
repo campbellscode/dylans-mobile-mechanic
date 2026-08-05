@@ -130,7 +130,16 @@
   inset: 0;
   z-index: -1;
   background: rgba(6, 8, 10, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   cursor: default;
+}
+
+/* Reuses .foot__social-link for the buttons themselves — only the row
+   spacing/centering is specific to the mobile menu */
+.nav__social {
+  justify-content: center;
+  margin: 22px 0 6px;
 }
 
 @media (max-width: 1024px) {
@@ -144,8 +153,9 @@
     top: 68px;
     left: 0;
     right: 0;
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 0;
     margin: 0;
     padding: 10px var(--gutter) 26px;
@@ -157,20 +167,22 @@
     transform: translateY(-8px);
     pointer-events: none;
     transition: opacity var(--ease), transform var(--ease);
+    text-align: center;
   }
   .nav__menu--open { opacity: 1; transform: none; pointer-events: auto; }
 
-  .nav__links { flex-direction: column; align-items: stretch; gap: 0; }
+  .nav__links { flex-direction: column; align-items: center; gap: 0; width: 100%; }
   .nav__link {
-    padding: 16px 4px;
+    padding: 16px 24px;
     font-size: 13px;
     letter-spacing: 0.14em;
     color: var(--clr-text);
     border-bottom: 1px solid var(--line);
+    text-align: center;
   }
-  .nav__link::after { left: 4px; right: 4px; bottom: 10px; }
+  .nav__link::after { left: 24px; right: 24px; bottom: 10px; }
 
-  .nav__cta--mobile { margin-top: 18px; width: 100%; min-height: 50px; font-size: 15px; }
+  .nav__cta--mobile { margin: 18px auto 0; width: 100%; max-width: 400px; min-height: 50px; font-size: 15px; }
 }
 
 
