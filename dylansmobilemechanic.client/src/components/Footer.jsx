@@ -69,7 +69,6 @@ export default function Footer() {
             <li><a href={`tel:${PHONE_HREF}`}>{PHONE_DISPLAY}</a></li>
             <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
           </ul>
-          <p className="foot__meta">Cincinnati &amp; Northern Kentucky</p>
           <p className="foot__meta">Mon–Sat, 7am – 7pm</p>
         </Reveal>
       </div>
@@ -79,7 +78,7 @@ export default function Footer() {
           <p>&copy; {year} Dylan&rsquo;s Mobile Mechanic</p>
           <p className="foot__bar-tag">
             <span className="status-dot" aria-hidden="true" />
-            Serving Greater Cincinnati & Northern KY
+            Serving Cincinnati & Northern KY
           </p>
         </div>
 
