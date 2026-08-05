@@ -1,49 +1,70 @@
 import { useState, useEffect } from 'react';
 import logo from '../assets/logo-9.png';
 
+const LINKS = [
+  { href: '#home', label: 'Home' },
+  { href: '#services', label: 'Services' },
+  { href: '#about', label: 'About' },
+  { href: '#contact', label: 'Contact' },
+];
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const close = () => setMenuOpen(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  const close = () => setOpen(false);
 
   return (
-    <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
-      <div className="navbar__inner container">
-        <a href="#home" className="navbar__logo" onClick={close}>
-          <img src={logo} alt="Dylan's Mobile Mechanic" />
+    <nav className={`nav${scrolled ? ' nav--scrolled' : ''}`} aria-label="Main">
+      <div className="nav__inner container">
+        <a href="#home" className="nav__brand" onClick={close} aria-label="Dylan's Mobile Mechanic — home">
+          <img src={logo} alt="" />
         </a>
 
-        <ul className={`navbar__links${menuOpen ? ' navbar__links--open' : ''}`}>
-          <li><a href="#home" onClick={close}>Home</a></li>
-          <li><a href="#services" onClick={close}>Services</a></li>
-          <li><a href="#about" onClick={close}>About</a></li>
-          <li><a href="#contact" onClick={close}>Contact</a></li>
-          <li className="navbar__cta-mobile">
-            <a href="#contact" className="btn btn--primary" onClick={close}>Request a Quote</a>
-          </li>
-        </ul>
+        <div id="nav-menu" className={`nav__menu${open ? ' nav__menu--open' : ''}`}>
+          <ul className="nav__links">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <a href={l.href} className="nav__link" onClick={close}>{l.label}</a>
+              </li>
+            ))}
+          </ul>
+          <a href="#contact" className="btn btn--primary nav__cta nav__cta--mobile" onClick={close}>
+            Request a Quote
+          </a>
+        </div>
 
-        <a href="#contact" className="btn btn--primary navbar__cta-desktop">Request a Quote</a>
+        <a href="#contact" className="btn btn--primary nav__cta nav__cta--desktop">Request a Quote</a>
 
         <button
-          className={`navbar__toggle${menuOpen ? ' navbar__toggle--open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Toggle navigation menu"
+          type="button"
+          className={`nav__toggle${open ? ' nav__toggle--open' : ''}`}
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="nav-menu"
+          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         >
-          <span />
-          <span />
-          <span />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
         </button>
       </div>
 
-      {menuOpen && <div className="navbar__backdrop" onClick={close} />}
+      {open && <button type="button" className="nav__scrim" aria-label="Close navigation menu" onClick={close} />}
     </nav>
   );
 }
