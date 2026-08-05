@@ -1387,7 +1387,13 @@
 }
 .foot__inner > * { min-width: 0; }
 
-.foot__logo { height: 54px; width: auto; margin-bottom: 18px; }
+.foot__logo {
+  width: clamp(7.25rem, 11vw, 11rem);
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  margin-bottom: 18px;
+}
 
 .foot__desc {
   font-size: 14px;
