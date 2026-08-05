@@ -1,4 +1,4 @@
-import logo from '../assets/logo-8.png';
+import logo from '../assets/logo-10.png';
 
 /* Editable proof points — keep these factual. */
 const PROOF = ['Licensed & Insured', 'Same-Day Service Available', 'Serving Greater Cincinnati'];
