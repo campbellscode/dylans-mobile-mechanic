@@ -14,6 +14,7 @@
   z-index: 200;
   background: linear-gradient(to bottom, rgba(6, 8, 10, 0.72), rgba(6, 8, 10, 0));
   transition: background var(--ease), box-shadow var(--ease);
+  --nav-height: 76px; /* matches .nav__inner's desktop height */
 }
 
 .nav--scrolled {
@@ -136,40 +137,59 @@
 }
 
 /* Reuses .foot__social-link for the buttons themselves — only the row
-   spacing/centering is specific to the mobile menu */
+   centering is specific to the mobile menu. Vertical spacing between
+   this row and its neighbors comes from .nav__menu-inner's gap. */
 .nav__social {
   justify-content: center;
-  margin: 22px 0 6px;
 }
 
 @media (max-width: 1024px) {
+  .nav { --nav-height: 68px; /* matches .nav__inner's mobile height */ }
   .nav__inner { height: 68px; }
   .nav__toggle { display: flex; }
   .nav__cta--desktop { display: none; }
   .nav__cta--mobile { display: inline-flex; }
 
+  /* Outer panel: fixed below the navbar, fills to the viewport bottom,
+     and becomes the scroll container on short/landscape screens */
   .nav__menu {
     position: fixed;
-    top: 68px;
+    top: var(--nav-height);
     left: 0;
     right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
+    bottom: 0;
+    height: calc(100vh - var(--nav-height));
+    height: calc(100dvh - var(--nav-height));
     margin: 0;
-    padding: 10px var(--gutter) 26px;
+    padding: 0;
     background: rgba(13, 17, 20, 0.985);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--line-olive);
     opacity: 0;
     transform: translateY(-8px);
     pointer-events: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transition: opacity var(--ease), transform var(--ease);
-    text-align: center;
   }
   .nav__menu--open { opacity: 1; transform: none; pointer-events: auto; }
+
+  /* Inner wrapper: vertically centers the three content groups as a
+     balanced unit, falling back to top-aligned scrolling when the
+     content can't fit (short screens, landscape) */
+  .nav__menu-inner {
+    min-height: 100%;
+    width: 100%;
+    max-width: 24rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 3.2vh, 2rem);
+    padding: 26px var(--gutter) max(1.25rem, env(safe-area-inset-bottom));
+    text-align: center;
+  }
 
   .nav__links { flex-direction: column; align-items: center; gap: 0; width: 100%; }
   .nav__link {
@@ -182,7 +202,13 @@
   }
   .nav__link::after { left: 24px; right: 24px; bottom: 10px; }
 
-  .nav__cta--mobile { margin: 18px auto 0; width: 100%; max-width: 400px; min-height: 50px; font-size: 15px; }
+  .nav__cta--mobile { margin: 0 auto; width: 100%; max-width: 400px; min-height: 50px; font-size: 15px; }
+}
+
+@media (max-width: 1024px) and (max-height: 560px) {
+  /* Too short to center comfortably — settle for safe top-to-bottom
+     scrolling instead of squeezing everything together */
+  .nav__menu-inner { justify-content: flex-start; }
 }
 
 

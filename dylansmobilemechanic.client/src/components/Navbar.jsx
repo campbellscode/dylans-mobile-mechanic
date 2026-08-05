@@ -30,6 +30,13 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, [open]);
+
   const close = () => setOpen(false);
 
   return (
@@ -40,6 +47,7 @@ export default function Navbar() {
         </a>
 
         <div id="nav-menu" className={`nav__menu${open ? ' nav__menu--open' : ''}`}>
+          <div className="nav__menu-inner">
           <ul className="nav__links">
             {LINKS.map((l) => (
               <li key={l.href}>
@@ -79,6 +87,7 @@ export default function Navbar() {
           <a href="#contact" className="btn btn--primary nav__cta nav__cta--mobile" onClick={close}>
             Request a Quote
           </a>
+          </div>
         </div>
 
         <a href="#contact" className="btn btn--primary nav__cta nav__cta--desktop">Request a Quote</a>
