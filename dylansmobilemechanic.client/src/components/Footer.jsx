@@ -77,7 +77,7 @@ export default function Footer() {
         <p>&copy; {year} Dylan&rsquo;s Mobile Mechanic</p>
         <p className="foot__bar-tag">
           <span className="status-dot" aria-hidden="true" />
-          Serving Greater Cincinnati
+          Serving Greater Cincinnati & Northern KY
         </p>
       </div>
     </footer>

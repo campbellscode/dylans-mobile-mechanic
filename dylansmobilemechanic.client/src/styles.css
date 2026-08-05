@@ -1598,4 +1598,15 @@
     justify-content: center;
     text-align: center;
   }
+
+  /* Longer status text can wrap at narrow widths — constrain the tag so
+     it wraps within the footer's padding instead of overflowing, and
+     keep the diamond pinned to the first line rather than centering
+     against the full wrapped block */
+  .foot__bar-tag {
+    max-width: 100%;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .foot__bar-tag .status-dot { margin-top: 3px; }
 }
