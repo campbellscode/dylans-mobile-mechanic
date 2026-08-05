@@ -162,9 +162,16 @@
     height: calc(100dvh - var(--nav-height));
     margin: 0;
     padding: 0;
-    background: rgba(13, 17, 20, 0.985);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* Branded gradient: gun-metal base, midnight-purple concentrated in
+       one corner (never behind the centered content), a whisper of
+       olive opposite it. Fully opaque, so backdrop-filter would be
+       wasted GPU work here — the old flat background used it to blend
+       with the page; this one doesn't need to. */
+    background:
+      radial-gradient(circle at 80% 16%, rgba(74, 40, 160, 0.24) 0%, rgba(74, 40, 160, 0.08) 32%, transparent 58%),
+      radial-gradient(circle at 12% 86%, rgba(107, 124, 47, 0.1) 0%, transparent 42%),
+      linear-gradient(155deg, var(--clr-steel-0) 0%, var(--clr-purple-deep) 44%, var(--clr-purple) 72%, var(--clr-steel-0) 100%);
+    border-top: 1px solid var(--line-olive);
     opacity: 0;
     transform: translateY(-8px);
     pointer-events: none;
@@ -174,10 +181,25 @@
   }
   .nav__menu--open { opacity: 1; transform: none; pointer-events: auto; }
 
+  /* Faint static technical grid, matching the hero's texture, kept
+     behind .nav__menu-inner (a normal DOM child paints after ::before
+     by default, so no z-index is needed) */
+  .nav__menu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px);
+    background-size: 56px 56px;
+    pointer-events: none;
+  }
+
   /* Inner wrapper: vertically centers the three content groups as a
      balanced unit, falling back to top-aligned scrolling when the
      content can't fit (short screens, landscape) */
   .nav__menu-inner {
+    position: relative;
     min-height: 100%;
     width: 100%;
     max-width: 24rem;
