@@ -1201,10 +1201,33 @@
   .about__inner { grid-template-columns: minmax(0, 1fr); gap: 36px; }
 }
 @media (max-width: 640px) {
-  .facts__value { font-size: clamp(1.35rem, 6vw, 1.65rem); line-height: 1; }
+  /* Grid instead of wrapping flex: three equal columns that never
+     drop the third stat to a new row, however narrow the screen */
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 0;
+  }
+  .facts__item {
+    min-width: 0;
+    padding-inline: clamp(0.3rem, 1.8vw, 0.65rem);
+    margin: 0;
+    text-align: center;
+  }
+  .facts__value {
+    font-size: clamp(1.15rem, 5vw, 1.4rem);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .facts__label {
+    font-size: clamp(0.52rem, 2.3vw, 0.65rem);
+    letter-spacing: clamp(0.08em, 0.35vw, 0.16em);
+    line-height: 1.35;
+    white-space: nowrap;
+  }
 }
 @media (max-width: 480px) {
-  .facts__item { padding-right: 20px; margin-right: 20px; }
   .commitment { padding: 22px 18px 20px; }
 }
 
