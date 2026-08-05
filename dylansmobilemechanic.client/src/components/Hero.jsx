@@ -1,7 +1,7 @@
 import logo from '../assets/logo-10.png';
 
 /* Editable proof points — keep these factual. */
-const PROOF = ['Licensed & Insured', 'Same-Day Service Available', 'Serving Greater Cincinnati'];
+const PROOF = ['Serving Cincinnati & Northern KY', 'Mobile Service — We Come to You', 'Same-Day Appointments When Available'];
 
 const PhoneIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
