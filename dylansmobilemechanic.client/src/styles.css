@@ -1064,6 +1064,18 @@
 
   .coverage__board-label { text-align: center; }
 
+  /* .reveal-inline is display:inline-block, which auto margins don't
+     center — switch it to a fit-content flex box so margin-inline:
+     auto actually works, and the button (icon + text, untouched)
+     centers as one unit without touching the viewport edges */
+  .coverage__copy .reveal-inline {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+    justify-content: center;
+  }
+
   /* Centered as one block, not row-by-row — same pattern as the hero
      trust list: the list shrinks to its widest label and centers as a
      unit, so every row's bullet/text columns share the same x. */
