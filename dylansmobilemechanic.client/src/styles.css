@@ -1570,6 +1570,61 @@
   text-transform: uppercase;
 }
 
+/* Groups copyright + status so the pair reads as one unit on the left
+   of .foot__bar, balanced against the developer credit on the right */
+.foot__bar-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+/* Developer credit — same chamfer language as the social buttons, with
+   a translucent circular badge so the logo's dark tones stay visible
+   against the footer without editing the source file */
+.foot__dev {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 6px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow var(--ease);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.foot__dev:hover { box-shadow: inset 0 0 0 1px var(--line-olive); }
+
+.foot__dev-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.09);
+  box-sizing: border-box;
+}
+.foot__dev-badge img { width: 100%; height: auto; object-fit: contain; display: block; }
+
+.foot__dev-text { display: flex; flex-direction: column; line-height: 1.3; text-align: left; }
+.foot__dev-text span {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--clr-text-faint);
+}
+.foot__dev-text strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--clr-text);
+  transition: color var(--ease);
+}
+.foot__dev:hover .foot__dev-text strong { color: var(--clr-olive-txt); }
+
 @media (max-width: 860px) {
   .foot__inner { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px; }
   .foot__brand { grid-column: 1 / -1; }
@@ -1598,6 +1653,8 @@
     justify-content: center;
     text-align: center;
   }
+  .foot__bar-info { flex-direction: column; }
+  .foot__dev-badge { width: 42px; }
 
   /* Longer status text can wrap at narrow widths — constrain the tag so
      it wraps within the footer's padding instead of overflowing, and

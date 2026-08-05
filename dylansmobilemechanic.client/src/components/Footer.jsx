@@ -1,4 +1,5 @@
 import logo from '../assets/logo-9.png';
+import campbellsCodeLogo from '../assets/campbells-code-logo.png';
 import Reveal from './Reveal';
 
 const PHONE_DISPLAY = '(555) 123-4567';
@@ -74,11 +75,29 @@ export default function Footer() {
       </div>
 
       <div className="container foot__bar">
-        <p>&copy; {year} Dylan&rsquo;s Mobile Mechanic</p>
-        <p className="foot__bar-tag">
-          <span className="status-dot" aria-hidden="true" />
-          Serving Greater Cincinnati & Northern KY
-        </p>
+        <div className="foot__bar-info">
+          <p>&copy; {year} Dylan&rsquo;s Mobile Mechanic</p>
+          <p className="foot__bar-tag">
+            <span className="status-dot" aria-hidden="true" />
+            Serving Greater Cincinnati & Northern KY
+          </p>
+        </div>
+
+        <a
+          href="https://campbellscode.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="foot__dev"
+          aria-label="Visit Campbell's Code"
+        >
+          <span className="foot__dev-badge">
+            <img src={campbellsCodeLogo} alt="Campbell's Code logo" />
+          </span>
+          <span className="foot__dev-text">
+            <span>Developed by</span>
+            <strong>Campbell&rsquo;s Code</strong>
+          </span>
+        </a>
       </div>
     </footer>
   );
