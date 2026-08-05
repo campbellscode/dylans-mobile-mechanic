@@ -1031,7 +1031,29 @@
   .radius__ring--3, .radius__axis--y { height: 150px; }
   .radius__ring--2 { width: 104px; height: 104px; }
   .radius__ring--1 { width: 58px; height: 58px; }
-  .coverage__list { grid-template-columns: minmax(0, 1fr); }
+
+  .coverage__board-label { text-align: center; }
+
+  /* Centered as one block, not row-by-row — same pattern as the hero
+     trust list: the list shrinks to its widest label and centers as a
+     unit, so every row's bullet/text columns share the same x. */
+  .coverage__list {
+    grid-template-columns: none;
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  .coverage__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 10px;
+    width: 100%;
+    text-align: left;
+  }
+  .coverage__item--more {
+    display: block;
+    text-align: center;
+  }
 }
 
 
