@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Stage from './Stage';
 import Reveal from './Reveal';
 
@@ -86,6 +86,19 @@ export default function Contact() {
   const [quoteState, setQuoteState] = useState('form');
   const [estimate, setEstimate] = useState(null);
   const [quoteErrorCode, setQuoteErrorCode] = useState(null);
+  const estimatePanelRef = useRef(null);
+
+  // Runs after React has committed the estimate panel to the DOM (the
+  // effect fires after render, so the ref is guaranteed to be attached —
+  // no risk of scrolling before the panel exists).
+  useEffect(() => {
+    if (quoteState !== 'estimate' || !estimatePanelRef.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    estimatePanelRef.current.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  }, [quoteState]);
 
   const set = (field) => (e) => {
     const value = e.target.value;
@@ -400,7 +413,7 @@ export default function Contact() {
 
             <div aria-live="polite">
               {quoteState === 'estimate' && estimate && (
-                <div className={`quote-estimate${estimate.withinStandardServiceArea ? '' : ' quote-estimate--outside'}`}>
+                <div ref={estimatePanelRef} className={`quote-estimate${estimate.withinStandardServiceArea ? '' : ' quote-estimate--outside'}`}>
                   <span className="quote-estimate__eyebrow">Automated Preliminary Estimate</span>
 
                   <dl className="quote-estimate__rows">
