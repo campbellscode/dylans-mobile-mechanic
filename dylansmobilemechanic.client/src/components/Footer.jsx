@@ -4,7 +4,7 @@ import Reveal from './Reveal';
 
 const PHONE_DISPLAY = '(513) 846-1958';
 const PHONE_HREF = '+15138461958';
-const EMAIL = 'dylan@dylansmobilemechanic.com';
+const EMAIL = 'dyfrey94@gmail.com';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -69,7 +69,7 @@ export default function Footer() {
             <li><a href={`tel:${PHONE_HREF}`}>{PHONE_DISPLAY}</a></li>
             <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
           </ul>
-          <p className="foot__meta">Mon–Sat, 7am – 7pm</p>
+          <p className="foot__meta">Mon-Fri, 4:30pm-12am</p>
         </Reveal>
       </div>
 

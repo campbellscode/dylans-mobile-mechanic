@@ -22,8 +22,8 @@ const STEPS = [
 /* Editable contact details */
 const PHONE_DISPLAY = '(513) 846-1958';
 const PHONE_HREF = '+15138461958';
-const EMAIL = 'dylan@dylansmobilemechanic.com';
-const HOURS = 'Mon–Sat, 7am – 7pm';
+const EMAIL = 'dyfrey94@gmail.com';
+const HOURS = 'Mon-Fri, 4:30pm-12am';
 
 const PhoneIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
