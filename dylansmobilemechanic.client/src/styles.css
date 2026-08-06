@@ -1565,6 +1565,8 @@
 /* Matches section[id]'s offset so the fixed navbar doesn't cover the
    top of the panel when it's scrolled into view after calculating */
 .quote-estimate { scroll-margin-top: 84px; }
+/* Same offset for the form itself, scrolled back into view on Reset */
+.quote__form-el { scroll-margin-top: 84px; }
 .quote-estimate--outside,
 .quote-error {
   box-shadow: inset 0 0 0 1px var(--line-purple);

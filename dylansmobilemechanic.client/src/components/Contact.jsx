@@ -87,6 +87,7 @@ export default function Contact() {
   const [estimate, setEstimate] = useState(null);
   const [quoteErrorCode, setQuoteErrorCode] = useState(null);
   const estimatePanelRef = useRef(null);
+  const formRef = useRef(null);
 
   // Runs after React has committed the estimate panel to the DOM (the
   // effect fires after render, so the ref is guaranteed to be attached —
@@ -122,11 +123,21 @@ export default function Contact() {
 
   // Reset keeps the entered field values but discards the current estimate
   // — same effect as the automatic stale-estimate invalidation, just
-  // triggered manually instead of by editing a field.
+  // triggered manually instead of by editing a field. Also scrolls back up
+  // to the form, since Reset is clicked from down inside the estimate
+  // panel — the form itself is already mounted, so no need to wait for a
+  // render before scrolling (unlike the estimate-panel scroll effect).
   const handleResetEstimate = () => {
     setQuoteState('form');
     setEstimate(null);
     setQuoteErrorCode(null);
+    if (formRef.current) {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      formRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }
   };
 
   const serviceLabel = SERVICE_CATALOG.find((s) => s.value === form.service)?.label || 'Not sure yet';
@@ -312,7 +323,7 @@ export default function Contact() {
         <Reveal variant="lock" delay={80} className="quote__form panel">
           <span className="edge" aria-hidden="true" />
 
-          <form onSubmit={handleSubmit} noValidate={false}>
+          <form ref={formRef} onSubmit={handleSubmit} noValidate={false} className="quote__form-el">
             <Reveal as="fieldset" variant="rise" index={0} step={60} className="fieldset">
               <legend className="fieldset__legend">Your contact</legend>
 
@@ -328,9 +339,41 @@ export default function Contact() {
                     autoComplete="tel" value={form.phone} onChange={set('phone')} />
                 </div>
               </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="email">Email</label>
+                <input id="email" name="email" className="field__input" type="email"
+                  autoComplete="email" value={form.email} onChange={set('email')} />
+              </div>
             </Reveal>
 
             <Reveal as="fieldset" variant="rise" index={1} step={60} className="fieldset">
+              <legend className="fieldset__legend">Your vehicle</legend>
+
+              <div className="field">
+                <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
+                <input id="vehicle" name="vehicle" className="field__input" type="text" required
+                  placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="service">Service needed</label>
+                <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
+                <select id="service" name="service" className="field__input field__select"
+                  value={form.service} onChange={set('service')}>
+                  <option value="">Not sure yet</option>
+                  {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
+                <textarea id="message" name="message" className="field__input field__textarea" rows={4}
+                  placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
+              </div>
+            </Reveal>
+
+            <Reveal as="fieldset" variant="rise" index={2} step={60} className="fieldset">
               <legend className="fieldset__legend">Service address</legend>
 
               <div className="field">
@@ -358,39 +401,7 @@ export default function Contact() {
               </div>
             </Reveal>
 
-            <Reveal as="div" variant="rise" index={2} step={60} className="field">
-              <label className="field__label" htmlFor="email">Email</label>
-              <input id="email" name="email" className="field__input" type="email"
-                autoComplete="email" value={form.email} onChange={set('email')} />
-            </Reveal>
-
-            <Reveal as="fieldset" variant="rise" index={3} step={60} className="fieldset">
-              <legend className="fieldset__legend">Your vehicle</legend>
-
-              <div className="field">
-                <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
-                <input id="vehicle" name="vehicle" className="field__input" type="text" required
-                  placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
-              </div>
-
-              <div className="field">
-                <label className="field__label" htmlFor="service">Service needed</label>
-                <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
-                <select id="service" name="service" className="field__input field__select"
-                  value={form.service} onChange={set('service')}>
-                  <option value="">Not sure yet</option>
-                  {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-
-              <div className="field">
-                <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
-                <textarea id="message" name="message" className="field__input field__textarea" rows={4}
-                  placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
-              </div>
-            </Reveal>
-
-            <Reveal as="div" variant="rise" index={4} step={60} className="quote__submit">
+            <Reveal as="div" variant="rise" index={3} step={60} className="quote__submit">
               <div className="quote__actions">
                 <button type="button" className="btn btn--ghost btn--lg" onClick={handleClear} disabled={submitBusy}>
                   Clear
