@@ -67,6 +67,17 @@ export default function ServiceArea() {
           });
 
           if (!response.ok) {
+            // Surface *which* failure this was in the console (status +
+            // server error code) without showing internals to the visitor
+            // or logging anything about their location.
+            let errorCode = 'unknown_error';
+            try {
+              const errorBody = await response.json();
+              errorCode = errorBody?.error ?? errorCode;
+            } catch {
+              // Response wasn't JSON — leave errorCode as unknown_error.
+            }
+            console.error(`Check My Address failed: HTTP ${response.status} (${errorCode})`);
             setStatus(STATUS.SERVICE_DOWN);
             return;
           }
@@ -74,7 +85,8 @@ export default function ServiceArea() {
           const data = await response.json();
           setResult(data);
           setStatus(data.withinServiceArea ? STATUS.WITHIN : STATUS.OUTSIDE);
-        } catch {
+        } catch (err) {
+          console.error('Check My Address request failed before reaching the server:', err);
           setStatus(STATUS.SERVICE_DOWN);
         }
       },

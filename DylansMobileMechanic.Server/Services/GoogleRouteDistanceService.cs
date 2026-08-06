@@ -9,13 +9,15 @@ namespace DylansMobileMechanic.Server.Services
 {
     /// <summary>
     /// Calls Google Maps Platform Routes API (computeRoutes) for real driving
-    /// distance/time. Every failure path (missing key, timeout, non-success
-    /// response, unparsable body, no route) returns null — callers must not
-    /// substitute an estimate.
+    /// distance/time. Every failure path returns a typed RouteDistanceResult
+    /// with a specific RouteDistanceFailure — never null, never a bare bool —
+    /// so the controller (and the logs) can tell a bad key apart from a
+    /// timeout apart from "no route exists."
     /// </summary>
     public class GoogleRouteDistanceService : IRouteDistanceService
     {
         private const string ComputeRoutesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
+        private const int MaxSanitizedMessageLength = 300;
 
         private readonly HttpClient _httpClient;
         private readonly GoogleMapsOptions _googleMaps;
@@ -33,16 +35,19 @@ namespace DylansMobileMechanic.Server.Services
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(_googleMaps.RoutesApiKey);
 
-        public async Task<RouteDistanceResult?> GetDrivingDistanceAsync(
+        public async Task<RouteDistanceResult> GetDrivingDistanceAsync(
             string originAddress,
             double destinationLatitude,
             double destinationLongitude,
+            string traceId,
             CancellationToken cancellationToken)
         {
             if (!IsConfigured)
             {
-                _logger.LogError("Google Routes API key is not configured; cannot compute driving distance.");
-                return null;
+                // The controller already gates on IsConfigured before calling,
+                // so reaching this normally shouldn't happen — defensive only.
+                _logger.LogError("Google Routes API key is not configured. TraceId={TraceId}.", traceId);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.Unavailable);
             }
 
             var requestBody = new ComputeRoutesRequest
@@ -58,27 +63,56 @@ namespace DylansMobileMechanic.Server.Services
             };
             request.Headers.Add("X-Goog-Api-Key", _googleMaps.RoutesApiKey);
             request.Headers.Add("X-Goog-FieldMask", "routes.distanceMeters,routes.duration");
+            var fieldMaskPresent = request.Headers.Contains("X-Goog-FieldMask");
 
             HttpResponseMessage response;
             try
             {
                 response = await _httpClient.SendAsync(request, cancellationToken);
             }
-            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning("Google Routes API request timed out.");
-                return null;
+                // The caller's request was aborted — not a provider failure.
+                // Preserve normal ASP.NET Core cancellation behavior.
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelled, but not by the caller's token — this is the
+                // HttpClient's own configured Timeout firing.
+                _logger.LogWarning(
+                    "Google Routes request timed out. TraceId={TraceId}, Failure={Failure}, OriginType=address, DestinationType=latLng.",
+                    traceId, RouteDistanceFailure.Timeout);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.Timeout);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "Google Routes API request failed.");
-                return null;
+                _logger.LogWarning(
+                    "Google Routes network/TLS failure. TraceId={TraceId}, ExceptionType={ExceptionType}, Failure={Failure}, OriginType=address, DestinationType=latLng.",
+                    traceId, ex.GetType().Name, RouteDistanceFailure.Unavailable);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.Unavailable);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Google Routes API returned a non-success status: {StatusCode}.", response.StatusCode);
-                return null;
+                string? googleStatus = null;
+                string? sanitizedMessage = null;
+                try
+                {
+                    var errorEnvelope = await response.Content.ReadFromJsonAsync<GoogleErrorEnvelope>(cancellationToken: cancellationToken);
+                    googleStatus = errorEnvelope?.Error?.Status;
+                    sanitizedMessage = Sanitize(errorEnvelope?.Error?.Message);
+                }
+                catch (JsonException)
+                {
+                    // Error body wasn't the expected shape — proceed with just the HTTP status.
+                }
+
+                var failure = ClassifyFailure(response.StatusCode, googleStatus);
+                _logger.LogWarning(
+                    "Google Routes request failed. TraceId={TraceId}, HttpStatus={HttpStatus}, GoogleStatus={GoogleStatus}, Failure={Failure}, Message={Message}, FieldMaskPresent={FieldMaskPresent}, OriginType=address, DestinationType=latLng.",
+                    traceId, (int)response.StatusCode, googleStatus ?? "(none)", failure, sanitizedMessage ?? "(none)", fieldMaskPresent);
+                return RouteDistanceResult.Fail(failure);
             }
 
             ComputeRoutesResponse? parsed;
@@ -88,21 +122,67 @@ namespace DylansMobileMechanic.Server.Services
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Failed to parse Google Routes API response.");
-                return null;
+                _logger.LogWarning(
+                    "Failed to parse Google Routes response JSON. TraceId={TraceId}, ExceptionType={ExceptionType}, Failure={Failure}.",
+                    traceId, ex.GetType().Name, RouteDistanceFailure.InvalidResponse);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.InvalidResponse);
             }
 
             var route = parsed?.Routes?.FirstOrDefault();
-            if (route is null || route.DistanceMeters <= 0)
+            if (route is null)
             {
-                _logger.LogWarning("Google Routes API returned no usable route.");
-                return null;
+                _logger.LogWarning("Google Routes response contained no routes. TraceId={TraceId}, Failure={Failure}.", traceId, RouteDistanceFailure.RouteNotFound);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.RouteNotFound);
+            }
+
+            if (route.DistanceMeters <= 0)
+            {
+                _logger.LogWarning("Google Routes response had an invalid distance. TraceId={TraceId}, Failure={Failure}.", traceId, RouteDistanceFailure.InvalidResponse);
+                return RouteDistanceResult.Fail(RouteDistanceFailure.InvalidResponse);
             }
 
             var distanceMiles = Math.Round(route.DistanceMeters / 1609.344, 1);
             var durationMinutes = ParseDurationMinutes(route.Duration);
 
-            return new RouteDistanceResult(distanceMiles, durationMinutes);
+            return RouteDistanceResult.Ok(distanceMiles, durationMinutes);
+        }
+
+        private static RouteDistanceFailure ClassifyFailure(System.Net.HttpStatusCode httpStatus, string? googleStatus)
+        {
+            var code = (int)httpStatus;
+
+            if (code == 400 || googleStatus == "INVALID_ARGUMENT")
+            {
+                return RouteDistanceFailure.InvalidRequest;
+            }
+            if (code is 401 or 403 || googleStatus is "UNAUTHENTICATED" or "PERMISSION_DENIED")
+            {
+                return RouteDistanceFailure.Unauthorized;
+            }
+            if (code == 429 || googleStatus == "RESOURCE_EXHAUSTED")
+            {
+                return RouteDistanceFailure.RateLimited;
+            }
+            if (code >= 500)
+            {
+                return RouteDistanceFailure.Unavailable;
+            }
+
+            return RouteDistanceFailure.Unavailable;
+        }
+
+        /// <summary>Strips line breaks and caps length before this ever reaches a log.</summary>
+        private static string? Sanitize(string? message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return null;
+            }
+
+            var cleaned = message.Replace("\r", " ").Replace("\n", " ").Trim();
+            return cleaned.Length > MaxSanitizedMessageLength
+                ? cleaned[..MaxSanitizedMessageLength]
+                : cleaned;
         }
 
         /// <summary>Google returns duration as a string like "1830s".</summary>
@@ -173,6 +253,25 @@ namespace DylansMobileMechanic.Server.Services
 
             [JsonPropertyName("duration")]
             public string? Duration { get; set; }
+        }
+
+        /// <summary>Google's standard error envelope: { "error": { "code", "message", "status" } }.</summary>
+        private class GoogleErrorEnvelope
+        {
+            [JsonPropertyName("error")]
+            public GoogleErrorDetail? Error { get; set; }
+        }
+
+        private class GoogleErrorDetail
+        {
+            [JsonPropertyName("code")]
+            public int Code { get; set; }
+
+            [JsonPropertyName("message")]
+            public string? Message { get; set; }
+
+            [JsonPropertyName("status")]
+            public string? Status { get; set; }
         }
     }
 }
