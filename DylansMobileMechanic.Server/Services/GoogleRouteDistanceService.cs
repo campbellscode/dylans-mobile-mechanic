@@ -31,14 +31,15 @@ namespace DylansMobileMechanic.Server.Services
             _logger = logger;
         }
 
+        public bool IsConfigured => !string.IsNullOrWhiteSpace(_googleMaps.RoutesApiKey);
+
         public async Task<RouteDistanceResult?> GetDrivingDistanceAsync(
-            double originLatitude,
-            double originLongitude,
+            string originAddress,
             double destinationLatitude,
             double destinationLongitude,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(_googleMaps.RoutesApiKey))
+            if (!IsConfigured)
             {
                 _logger.LogError("Google Routes API key is not configured; cannot compute driving distance.");
                 return null;
@@ -46,10 +47,9 @@ namespace DylansMobileMechanic.Server.Services
 
             var requestBody = new ComputeRoutesRequest
             {
-                Origin = new RouteWaypoint { Location = new RouteLocation { LatLng = new RouteLatLng { Latitude = originLatitude, Longitude = originLongitude } } },
-                Destination = new RouteWaypoint { Location = new RouteLocation { LatLng = new RouteLatLng { Latitude = destinationLatitude, Longitude = destinationLongitude } } },
+                Origin = new OriginWaypoint { Address = originAddress },
+                Destination = new DestinationWaypoint { Location = new RouteLocation { LatLng = new RouteLatLng { Latitude = destinationLatitude, Longitude = destinationLongitude } } },
                 TravelMode = "DRIVE",
-                RoutingPreference = "TRAFFIC_AWARE",
             };
 
             using var request = new HttpRequestMessage(HttpMethod.Post, ComputeRoutesUrl)
@@ -122,19 +122,24 @@ namespace DylansMobileMechanic.Server.Services
         private class ComputeRoutesRequest
         {
             [JsonPropertyName("origin")]
-            public required RouteWaypoint Origin { get; set; }
+            public required OriginWaypoint Origin { get; set; }
 
             [JsonPropertyName("destination")]
-            public required RouteWaypoint Destination { get; set; }
+            public required DestinationWaypoint Destination { get; set; }
 
             [JsonPropertyName("travelMode")]
             public required string TravelMode { get; set; }
-
-            [JsonPropertyName("routingPreference")]
-            public required string RoutingPreference { get; set; }
         }
 
-        private class RouteWaypoint
+        /// <summary>Dylan's configured service-base address — geocoded by
+        /// Google, not resolved to lat/lng on our side.</summary>
+        private class OriginWaypoint
+        {
+            [JsonPropertyName("address")]
+            public required string Address { get; set; }
+        }
+
+        private class DestinationWaypoint
         {
             [JsonPropertyName("location")]
             public required RouteLocation Location { get; set; }

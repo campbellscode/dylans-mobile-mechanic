@@ -53,15 +53,22 @@ namespace DylansMobileMechanic.Server.Controllers
                 return BadRequest(new ServiceAreaErrorResponse("invalid_coordinates"));
             }
 
-            if (_serviceArea.CenterLatitude == 0 && _serviceArea.CenterLongitude == 0)
+            // Distinguish "we're not configured" from "the provider failed" —
+            // both look identical to a visitor, but they need different fixes.
+            // Logged as booleans only: never the key, never the address.
+            var apiKeyConfigured = _routeDistanceService.IsConfigured;
+            var originConfigured = !string.IsNullOrWhiteSpace(_serviceArea.OriginAddress);
+
+            if (!apiKeyConfigured || !originConfigured)
             {
-                _logger.LogError("Service area center coordinates are not configured.");
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new ServiceAreaErrorResponse("route_service_unavailable"));
+                _logger.LogError(
+                    "Service area configuration missing: ApiKeyConfigured={ApiKeyConfigured}, OriginConfigured={OriginConfigured}.",
+                    apiKeyConfigured, originConfigured);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new ServiceAreaErrorResponse("route_configuration_unavailable"));
             }
 
             var result = await _routeDistanceService.GetDrivingDistanceAsync(
-                _serviceArea.CenterLatitude,
-                _serviceArea.CenterLongitude,
+                _serviceArea.OriginAddress,
                 request.Latitude,
                 request.Longitude,
                 cancellationToken);

@@ -9,9 +9,13 @@ namespace DylansMobileMechanic.Server.Services
     /// </summary>
     public interface IRouteDistanceService
     {
+        /// <summary>True when this service has everything it needs (the API
+        /// key) to attempt a call. Lets the controller report a
+        /// configuration problem distinctly from a provider failure.</summary>
+        bool IsConfigured { get; }
+
         Task<RouteDistanceResult?> GetDrivingDistanceAsync(
-            double originLatitude,
-            double originLongitude,
+            string originAddress,
             double destinationLatitude,
             double destinationLongitude,
             CancellationToken cancellationToken);

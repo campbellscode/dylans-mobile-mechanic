@@ -41,6 +41,20 @@ namespace DylansMobileMechanic.Server
 
             var app = builder.Build();
 
+            // Booleans only — never the key, the address, or any config value.
+            // Exists specifically so a misconfiguration (wrong env var name,
+            // IIS site not picking up Configuration Editor changes, etc.) is
+            // visible in the log instead of surfacing only as a generic 503.
+            app.Logger.LogInformation(
+                "Google Routes configuration status: ApiKeyConfigured={ApiKeyConfigured}, OriginConfigured={OriginConfigured}, RadiusConfigured={RadiusConfigured}",
+                !string.IsNullOrWhiteSpace(app.Configuration["GoogleMaps:RoutesApiKey"]),
+                !string.IsNullOrWhiteSpace(app.Configuration["ServiceArea:OriginAddress"]),
+                double.TryParse(
+                    app.Configuration["ServiceArea:RadiusMiles"],
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out _));
+
             app.UseDefaultFiles();
             app.MapStaticAssets();
 

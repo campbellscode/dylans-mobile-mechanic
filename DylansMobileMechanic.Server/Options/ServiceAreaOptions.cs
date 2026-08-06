@@ -1,9 +1,8 @@
 namespace DylansMobileMechanic.Server.Options
 {
-    public class ServiceAreaOptions
+    public sealed class ServiceAreaOptions
     {
-        public double CenterLatitude { get; set; }
-        public double CenterLongitude { get; set; }
+        public string OriginAddress { get; set; } = string.Empty;
         public double RadiusMiles { get; set; } = 30;
     }
 }
