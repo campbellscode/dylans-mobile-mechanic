@@ -2,23 +2,30 @@ import { useState } from 'react';
 import Stage from './Stage';
 import Reveal from './Reveal';
 
-/* Customer-facing dropdown shows label only — never a price.
- * startingPrice/priceType are placeholders (TBD) pending Dylan's actual
- * rate sheet; wire them into quote prep / admin notifications once set.
- * priceType is expected to be one of: 'flat' | 'hourly' | 'diagnostic-fee'. */
+/* Customer-facing dropdown shows label only — never a price. Pricing here
+ * is internal (quote prep / admin notifications / future quoting logic),
+ * not rendered in the <select>. priceType: 'flat' | 'hourly'.
+ * Note: all "flat" starting prices are labor only — parts are quoted
+ * separately, and final pricing depends on the vehicle, parts required,
+ * accessibility, rust/corrosion, and actual repair requirements. */
 const SERVICE_CATALOG = [
-  { value: 'diagnostic', label: 'Diagnostic', startingPrice: null, priceType: null },
-  { value: 'brake-service', label: 'Brake Service', startingPrice: null, priceType: null },
-  { value: 'oil-changes', label: 'Oil Changes', startingPrice: null, priceType: null },
-  { value: 'tune-ups', label: 'Tune-Ups', startingPrice: null, priceType: null },
-  { value: 'ac-service', label: 'A/C Service', startingPrice: null, priceType: null },
-  { value: 'battery-replacement', label: 'Battery Replacement', startingPrice: null, priceType: null },
-  { value: 'alternator-replacement', label: 'Alternator Replacement', startingPrice: null, priceType: null },
-  { value: 'starter-replacement', label: 'Starter Replacement', startingPrice: null, priceType: null },
-  { value: 'cooling-system-repairs', label: 'Cooling System Repairs', startingPrice: null, priceType: null },
-  { value: 'suspension-repairs', label: 'Suspension Repairs', startingPrice: null, priceType: null },
-  { value: 'electrical-diagnosis', label: 'Electrical Diagnosis', startingPrice: null, priceType: null },
+  { value: 'diagnostic', label: 'Diagnostic', startingPrice: 100, priceType: 'flat' },
+  { value: 'brake-service', label: 'Brake Service', startingPrice: 150, priceType: 'flat' },
+  { value: 'oil-changes', label: 'Oil Changes', startingPrice: 89.99, priceType: 'flat' },
+  { value: 'tune-ups', label: 'Tune-Ups', startingPrice: 150, priceType: 'flat' },
+  { value: 'ac-service', label: 'A/C Service', startingPrice: 125, priceType: 'flat' },
+  { value: 'battery-replacement', label: 'Battery Replacement', startingPrice: 50, priceType: 'flat' },
+  { value: 'alternator-replacement', label: 'Alternator Replacement', startingPrice: 200, priceType: 'flat' },
+  { value: 'starter-replacement', label: 'Starter Replacement', startingPrice: 200, priceType: 'flat' },
+  { value: 'cooling-system-repairs', label: 'Cooling System Repairs', startingPrice: 100, priceType: 'flat' },
+  { value: 'suspension-repairs', label: 'Suspension Repairs', startingPrice: 150, priceType: 'flat' },
+  { value: 'electrical-diagnosis', label: 'Electrical Diagnosis', startingPrice: 100, priceType: 'hourly' },
+  { value: 'other', label: 'Other', startingPrice: null, priceType: null },
 ];
+
+/* General rates, not tied to one service — kept internal, same as above. */
+const LABOR_RATE_PER_HOUR = 100;
+const MOBILE_SERVICE_FEE_STARTING = 25;
 
 const STEPS = [
   { title: 'Tell us about the vehicle', desc: 'Year, make, model, and what it’s doing.' },
