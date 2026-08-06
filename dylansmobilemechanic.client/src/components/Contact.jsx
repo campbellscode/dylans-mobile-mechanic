@@ -146,6 +146,13 @@ export default function Contact() {
     }
   };
 
+  // Strips line breaks and caps length before a value goes into a mailto
+  // subject — subjects are a single header line, never multi-line.
+  const sanitizeSubjectPart = (text, maxLength = 60) => {
+    const cleaned = (text || '').replace(/[\r\n]+/g, ' ').trim();
+    return cleaned.length > maxLength ? cleaned.slice(0, maxLength).trim() : cleaned;
+  };
+
   // Base request details every "send" email includes, regardless of outcome.
   const baseMailLines = () => [
     `Name: ${form.name}`,
@@ -163,7 +170,11 @@ export default function Contact() {
   // Dylan" links to. The mailto body is fully editable by the customer, so
   // this is explicitly labeled as an automated, unverified estimate.
   const mailHref = (() => {
-    const subject = `Quote request — ${form.vehicle || 'vehicle'}`;
+    const customerName = sanitizeSubjectPart(form.name) || 'Customer';
+    const serviceName = sanitizeSubjectPart(estimate?.serviceName || serviceLabel);
+    const subject = estimate && !estimate.withinStandardServiceArea
+      ? `Custom Travel Quote Request — ${serviceName} — ${customerName}`
+      : `Quote Request — ${serviceName} — ${customerName}`;
     const lines = [...baseMailLines()];
 
     if (estimate) {
@@ -177,20 +188,23 @@ export default function Contact() {
       if (estimate.withinStandardServiceArea) {
         lines.push(`Round-trip billable mileage: ${estimate.roundTripBillableMiles} miles`);
         lines.push(`Mobile service fee: $${estimate.travelFee.toFixed(2)}`);
+        // Never $0.00 and never a fabricated line — omitted entirely when
+        // the pricing type (Hourly/ManualReview) has no calculable subtotal.
         if (estimate.estimatedStartingSubtotal != null) {
           lines.push(`Estimated starting subtotal: $${estimate.estimatedStartingSubtotal.toFixed(2)}`);
         }
+        lines.push(`Standard labor rate: $${estimate.standardLaborRatePerHour.toFixed(0)}/hour`);
+        lines.push('Parts: Quoted separately');
+        lines.push('Within standard service area: Yes');
       } else {
+        // No fabricated mileage/fee/subtotal for a location outside the
+        // configured radius — status lines first, then the pending notes.
+        lines.push('Within standard service area: No');
+        lines.push('Custom travel quote required: Yes');
         lines.push('Mobile service fee: Pending manual review');
         lines.push('Estimated starting subtotal: Not available pending manual review');
       }
 
-      lines.push(`Standard labor rate: $${estimate.standardLaborRatePerHour.toFixed(0)}/hour`);
-      lines.push('Parts: Quoted separately');
-      lines.push(`Within standard service area: ${estimate.withinStandardServiceArea ? 'Yes' : 'No'}`);
-      if (!estimate.withinStandardServiceArea) {
-        lines.push('Custom travel quote required: Yes');
-      }
       lines.push('', 'Estimate must be verified by Dylan before acceptance.');
     }
 
@@ -200,7 +214,8 @@ export default function Contact() {
   // Fallback path when the automated calculation fails — no guessed
   // mileage or pricing, no claim about being in the service area.
   const manualReviewMailHref = (() => {
-    const subject = `Quote request — ${form.vehicle || 'vehicle'}`;
+    const customerName = sanitizeSubjectPart(form.name) || 'Customer';
+    const subject = `Manual Quote Review Request — ${customerName}`;
     const lines = [...baseMailLines(), '', 'Automated estimate unavailable — manual review required'];
     return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
   })();
