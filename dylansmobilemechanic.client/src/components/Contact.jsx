@@ -26,6 +26,25 @@ const SERVICE_CATALOG = [
  * quote-calculate request is sent. Must match the server catalog. */
 const NOT_SURE_YET_CODE = 'not-sure-yet';
 
+/* Formats digits as the customer types/pastes: 5 -> (51 -> (513) 8 ->
+ * (513) 846-1958. Never allows an 11th digit. Works the same whether the
+ * input came from typing or a paste (both land in e.target.value). */
+const formatPhoneNumber = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+
+  if (digits.length === 0) return '';
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+
+/* Digits only, for anything a tel: link or the server would ever need. */
+const getPhoneDigits = (value) => value.replace(/\D/g, '').slice(0, 10);
+
+/* ZIP+4 is not accepted — 5 digits only, leading zeroes preserved since
+ * this stays a string throughout (never parsed as a number). */
+const normalizeZipCode = (value) => value.replace(/\D/g, '').slice(0, 5);
+
 const STEPS = [
   { title: 'Tell us about the vehicle', desc: 'Year, make, model, and what it’s doing.' },
   { title: 'Dylan reviews the request', desc: 'He reads every one himself — no call centre.' },
@@ -88,6 +107,8 @@ export default function Contact() {
   const [quoteErrorCode, setQuoteErrorCode] = useState(null);
   const estimatePanelRef = useRef(null);
   const formRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  const zipInputRef = useRef(null);
 
   // Runs after React has committed the estimate panel to the DOM (the
   // effect fires after render, so the ref is guaranteed to be attached —
@@ -102,7 +123,18 @@ export default function Contact() {
   }, [quoteState]);
 
   const set = (field) => (e) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    // A stale "Enter a complete 10-digit phone number" (or ZIP) message
+    // from a prior failed submit attempt shouldn't linger once the
+    // customer starts fixing the value.
+    if (field === 'phone' || field === 'servicePostalCode') {
+      e.target.setCustomValidity('');
+    }
+    if (field === 'phone') {
+      value = formatPhoneNumber(value);
+    } else if (field === 'servicePostalCode') {
+      value = normalizeZipCode(value);
+    }
     setForm((f) => ({ ...f, [field]: value }));
     // Editing anything the estimate was calculated from invalidates it —
     // no separate "recalculate" button, just re-submit when ready.
@@ -114,11 +146,16 @@ export default function Contact() {
   };
 
   // Clear wipes every field and abandons any in-progress/completed quote.
+  // Also clears any lingering native custom-validity message on phone/ZIP
+  // — setForm(INITIAL_FORM) resets their value, but setCustomValidity is
+  // imperative DOM state React's render doesn't touch on its own.
   const handleClear = () => {
     setForm(INITIAL_FORM);
     setQuoteState('form');
     setEstimate(null);
     setQuoteErrorCode(null);
+    phoneInputRef.current?.setCustomValidity('');
+    zipInputRef.current?.setCustomValidity('');
   };
 
   // Reset keeps the entered field values but discards the current estimate
@@ -131,6 +168,8 @@ export default function Contact() {
     setQuoteState('form');
     setEstimate(null);
     setQuoteErrorCode(null);
+    phoneInputRef.current?.setCustomValidity('');
+    zipInputRef.current?.setCustomValidity('');
     if (formRef.current) {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       formRef.current.scrollIntoView({
@@ -335,8 +374,11 @@ export default function Contact() {
                 </div>
                 <div className="field">
                   <label className="field__label" htmlFor="phone">Phone <span aria-hidden="true">*</span></label>
-                  <input id="phone" name="phone" className="field__input" type="tel" required
-                    autoComplete="tel" value={form.phone} onChange={set('phone')} />
+                  <input ref={phoneInputRef} id="phone" name="phone" className="field__input" type="tel" required
+                    inputMode="numeric" autoComplete="tel" placeholder="(513) 846-1958" maxLength={14}
+                    pattern="^\(\d{3}\) \d{3}-\d{4}$" value={form.phone} onChange={set('phone')}
+                    onInvalid={(e) => e.target.setCustomValidity('Enter a complete 10-digit phone number.')} />
+                  <p className="field__hint field__hint--below">Format: (###) ###-####</p>
                 </div>
               </div>
 
@@ -395,8 +437,10 @@ export default function Contact() {
                 </div>
                 <div className="field">
                   <label className="field__label" htmlFor="servicePostalCode">ZIP code <span aria-hidden="true">*</span></label>
-                  <input id="servicePostalCode" name="servicePostalCode" className="field__input" type="text" required
-                    autoComplete="postal-code" inputMode="numeric" placeholder="45202" value={form.servicePostalCode} onChange={set('servicePostalCode')} />
+                  <input ref={zipInputRef} id="servicePostalCode" name="servicePostalCode" className="field__input" type="text" required
+                    autoComplete="postal-code" inputMode="numeric" placeholder="45211" maxLength={5}
+                    pattern="\d{5}" value={form.servicePostalCode} onChange={set('servicePostalCode')}
+                    onInvalid={(e) => e.target.setCustomValidity('Enter a valid 5-digit ZIP code.')} />
                 </div>
               </div>
             </Reveal>

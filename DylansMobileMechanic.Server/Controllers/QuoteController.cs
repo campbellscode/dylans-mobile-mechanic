@@ -48,7 +48,7 @@ namespace DylansMobileMechanic.Server.Controllers
         private const string DisclaimerText =
             "Parts are quoted separately. Final pricing depends on the vehicle, parts required, accessibility, rust or corrosion, and actual repair requirements.";
 
-        private static readonly Regex ZipRegex = new(@"^\d{5}(-\d{4})?$", RegexOptions.Compiled);
+        private static readonly Regex ZipRegex = new(@"^\d{5}$", RegexOptions.Compiled);
         private static readonly Regex RepeatedWhitespaceRegex = new(@"\s{2,}", RegexOptions.Compiled);
 
         private readonly IRouteDistanceService _routeDistanceService;

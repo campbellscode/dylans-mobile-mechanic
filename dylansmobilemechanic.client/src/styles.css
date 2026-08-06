@@ -1492,6 +1492,9 @@
   line-height: 1.5;
   color: var(--clr-text-faint);
 }
+/* Placed after an input rather than before a select — needs a positive
+   top margin instead of tucking up under a label above it */
+.field__hint--below { margin: 6px 0 0; }
 
 .field__input {
   width: 100%;
