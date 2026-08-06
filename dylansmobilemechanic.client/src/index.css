@@ -300,8 +300,14 @@ section[id] { scroll-margin-top: 84px; }
   letter-spacing: 0.02em;
   min-height: 48px;
   color: var(--clr-white);
-  transition: transform var(--ease), background var(--ease), color var(--ease), box-shadow var(--ease);
+  transition: transform var(--ease), background var(--ease), color var(--ease), box-shadow var(--ease), opacity var(--ease);
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
 }
 
 .btn--primary {
