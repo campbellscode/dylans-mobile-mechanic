@@ -17,7 +17,6 @@ namespace DylansMobileMechanic.Server.Services
     public class GoogleRouteDistanceService : IRouteDistanceService
     {
         private const string ComputeRoutesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
-        private const int MaxSanitizedMessageLength = 300;
 
         private readonly HttpClient _httpClient;
         private readonly GoogleMapsOptions _googleMaps;
@@ -95,13 +94,14 @@ namespace DylansMobileMechanic.Server.Services
 
             if (!response.IsSuccessStatusCode)
             {
+                // Only code/status are extracted — error.message is never read
+                // into a variable, since Google can echo request details
+                // (e.g. the origin address) back inside that message.
                 string? googleStatus = null;
-                string? sanitizedMessage = null;
                 try
                 {
                     var errorEnvelope = await response.Content.ReadFromJsonAsync<GoogleErrorEnvelope>(cancellationToken: cancellationToken);
                     googleStatus = errorEnvelope?.Error?.Status;
-                    sanitizedMessage = Sanitize(errorEnvelope?.Error?.Message);
                 }
                 catch (JsonException)
                 {
@@ -110,8 +110,8 @@ namespace DylansMobileMechanic.Server.Services
 
                 var failure = ClassifyFailure(response.StatusCode, googleStatus);
                 _logger.LogWarning(
-                    "Google Routes request failed. TraceId={TraceId}, HttpStatus={HttpStatus}, GoogleStatus={GoogleStatus}, Failure={Failure}, Message={Message}, FieldMaskPresent={FieldMaskPresent}, OriginType=address, DestinationType=latLng.",
-                    traceId, (int)response.StatusCode, googleStatus ?? "(none)", failure, sanitizedMessage ?? "(none)", fieldMaskPresent);
+                    "Google Routes request failed. TraceId={TraceId}, HttpStatus={HttpStatus}, GoogleStatus={GoogleStatus}, Failure={Failure}, FieldMaskPresent={FieldMaskPresent}, OriginType={OriginType}, DestinationType={DestinationType}",
+                    traceId, (int)response.StatusCode, googleStatus ?? "(none)", failure, fieldMaskPresent, "address", "latLng");
                 return RouteDistanceResult.Fail(failure);
             }
 
@@ -169,20 +169,6 @@ namespace DylansMobileMechanic.Server.Services
             }
 
             return RouteDistanceFailure.Unavailable;
-        }
-
-        /// <summary>Strips line breaks and caps length before this ever reaches a log.</summary>
-        private static string? Sanitize(string? message)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                return null;
-            }
-
-            var cleaned = message.Replace("\r", " ").Replace("\n", " ").Trim();
-            return cleaned.Length > MaxSanitizedMessageLength
-                ? cleaned[..MaxSanitizedMessageLength]
-                : cleaned;
         }
 
         /// <summary>Google returns duration as a string like "1830s".</summary>
@@ -267,8 +253,9 @@ namespace DylansMobileMechanic.Server.Services
             [JsonPropertyName("code")]
             public int Code { get; set; }
 
-            [JsonPropertyName("message")]
-            public string? Message { get; set; }
+            // Intentionally no "message" property — Google's human-readable
+            // error message can echo request details (e.g. the configured
+            // origin address), so it's never deserialized, held, or logged.
 
             [JsonPropertyName("status")]
             public string? Status { get; set; }
