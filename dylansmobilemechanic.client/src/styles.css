@@ -1530,6 +1530,8 @@
 .field__textarea { resize: vertical; min-height: 104px; }
 
 .quote__submit { margin-top: 4px; }
+.quote__actions { display: flex; gap: 12px; }
+.quote__actions .btn { flex: 1; min-width: 0; }
 .quote__note {
   margin-top: 14px;
   font-size: 12.5px;
@@ -1621,6 +1623,8 @@
 .quote-estimate--outside .quote-estimate__verify { color: var(--clr-purple-txt); }
 
 .quote-estimate__send { margin-top: 4px; }
+.quote-estimate__actions { display: flex; gap: 12px; margin-top: 4px; }
+.quote-estimate__actions .btn { flex: 1; min-width: 0; }
 
 .quote-error__message {
   font-size: 14px;
@@ -1643,6 +1647,8 @@
   .quote__form { padding: 24px 18px 22px; }
   .field-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .field-row .field { margin-bottom: 14px; }
+  .quote__actions,
+  .quote-estimate__actions { flex-direction: column; }
 }
 
 

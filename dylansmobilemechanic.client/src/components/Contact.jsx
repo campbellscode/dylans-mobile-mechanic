@@ -74,11 +74,13 @@ const ClockIcon = () => (
   </svg>
 );
 
+const INITIAL_FORM = {
+  name: '', phone: '', email: '', vehicle: '', service: '', message: '',
+  serviceAddress: '', serviceCity: '', serviceState: '', servicePostalCode: '',
+};
+
 export default function Contact() {
-  const [form, setForm] = useState({
-    name: '', phone: '', email: '', vehicle: '', service: '', message: '',
-    serviceAddress: '', serviceCity: '', serviceState: '', servicePostalCode: '',
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
 
   // 'form' | 'calculating' | 'estimate' | 'error'
   const [quoteState, setQuoteState] = useState('form');
@@ -95,6 +97,23 @@ export default function Contact() {
       setEstimate(null);
       setQuoteErrorCode(null);
     }
+  };
+
+  // Clear wipes every field and abandons any in-progress/completed quote.
+  const handleClear = () => {
+    setForm(INITIAL_FORM);
+    setQuoteState('form');
+    setEstimate(null);
+    setQuoteErrorCode(null);
+  };
+
+  // Reset keeps the entered field values but discards the current estimate
+  // — same effect as the automatic stale-estimate invalidation, just
+  // triggered manually instead of by editing a field.
+  const handleResetEstimate = () => {
+    setQuoteState('form');
+    setEstimate(null);
+    setQuoteErrorCode(null);
   };
 
   const serviceLabel = SERVICE_CATALOG.find((s) => s.value === form.service)?.label || 'Not sure yet';
@@ -296,41 +315,9 @@ export default function Contact() {
                     autoComplete="tel" value={form.phone} onChange={set('phone')} />
                 </div>
               </div>
-
-              <div className="field">
-                <label className="field__label" htmlFor="email">Email</label>
-                <input id="email" name="email" className="field__input" type="email"
-                  autoComplete="email" value={form.email} onChange={set('email')} />
-              </div>
             </Reveal>
 
             <Reveal as="fieldset" variant="rise" index={1} step={60} className="fieldset">
-              <legend className="fieldset__legend">Your vehicle</legend>
-
-              <div className="field">
-                <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
-                <input id="vehicle" name="vehicle" className="field__input" type="text" required
-                  placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
-              </div>
-
-              <div className="field">
-                <label className="field__label" htmlFor="service">Service needed</label>
-                <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
-                <select id="service" name="service" className="field__input field__select"
-                  value={form.service} onChange={set('service')}>
-                  <option value="">Not sure yet</option>
-                  {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-
-              <div className="field">
-                <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
-                <textarea id="message" name="message" className="field__input field__textarea" rows={4}
-                  placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
-              </div>
-            </Reveal>
-
-            <Reveal as="fieldset" variant="rise" index={2} step={60} className="fieldset">
               <legend className="fieldset__legend">Service address</legend>
 
               <div className="field">
@@ -358,11 +345,48 @@ export default function Contact() {
               </div>
             </Reveal>
 
-            <Reveal as="div" variant="rise" index={3} step={60} className="quote__submit">
-              <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={submitBusy}>
-                {submitBusy && <span className="check-address__spinner" aria-hidden="true" />}
-                {submitBusy ? 'Calculating Your Quote…' : 'Request My Quote'}
-              </button>
+            <Reveal as="div" variant="rise" index={2} step={60} className="field">
+              <label className="field__label" htmlFor="email">Email</label>
+              <input id="email" name="email" className="field__input" type="email"
+                autoComplete="email" value={form.email} onChange={set('email')} />
+            </Reveal>
+
+            <Reveal as="fieldset" variant="rise" index={3} step={60} className="fieldset">
+              <legend className="fieldset__legend">Your vehicle</legend>
+
+              <div className="field">
+                <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
+                <input id="vehicle" name="vehicle" className="field__input" type="text" required
+                  placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="service">Service needed</label>
+                <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
+                <select id="service" name="service" className="field__input field__select"
+                  value={form.service} onChange={set('service')}>
+                  <option value="">Not sure yet</option>
+                  {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
+                <textarea id="message" name="message" className="field__input field__textarea" rows={4}
+                  placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
+              </div>
+            </Reveal>
+
+            <Reveal as="div" variant="rise" index={4} step={60} className="quote__submit">
+              <div className="quote__actions">
+                <button type="button" className="btn btn--ghost btn--lg" onClick={handleClear} disabled={submitBusy}>
+                  Clear
+                </button>
+                <button type="submit" className="btn btn--primary btn--lg" disabled={submitBusy}>
+                  {submitBusy && <span className="check-address__spinner" aria-hidden="true" />}
+                  {submitBusy ? 'Calculating Your Quote…' : 'Request My Quote'}
+                </button>
+              </div>
               <p className="quote__note">
                 <span aria-hidden="true">*</span> Required. Prefer to talk?{' '}
                 <a href={`tel:${PHONE_HREF}`} className="quote__note-link contact-link">Call {PHONE_DISPLAY}</a>.
@@ -428,7 +452,10 @@ export default function Contact() {
                   </p>
                   <p className="quote-estimate__verify">Estimate must be verified by Dylan before acceptance.</p>
 
-                  <a href={mailHref} className="btn btn--primary btn--lg btn--block quote-estimate__send">Send to Dylan</a>
+                  <div className="quote-estimate__actions">
+                    <button type="button" className="btn btn--ghost btn--lg" onClick={handleResetEstimate}>Reset</button>
+                    <a href={mailHref} className="btn btn--primary btn--lg">Send to Dylan</a>
+                  </div>
                 </div>
               )}
 
