@@ -37,8 +37,8 @@ export default function Hero() {
 
           <div className="hero__actions">
             <a href="#contact" className="btn btn--primary btn--lg">Request a Quote</a>
-            <a href="tel:+15551234567" className="btn btn--ghost btn--lg">
-              <PhoneIcon />(555) 123-4567
+            <a href="tel:+15138461958" className="btn btn--ghost btn--lg">
+              <PhoneIcon />(513) 846-1958
             </a>
           </div>
 

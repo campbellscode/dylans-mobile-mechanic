@@ -28,7 +28,7 @@ export default function ServiceArea() {
           {/* Neutral wrapper: the button keeps its own hover transition
               untouched, the wrapper only handles the entrance */}
           <Reveal as="div" variant="rise" delay={180} className="reveal-inline">
-            <a href="tel:+15551234567" className="btn btn--ghost">Check My Address</a>
+            <a href="tel:+15138461958" className="btn btn--ghost">Check My Address</a>
           </Reveal>
         </div>
 

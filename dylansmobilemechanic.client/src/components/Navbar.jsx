@@ -9,7 +9,7 @@ const LINKS = [
 ];
 
 /* Same values and order as the footer's social/contact icon row */
-const PHONE_HREF = '+15551234567';
+const PHONE_HREF = '+15138461958';
 const EMAIL = 'dylan@dylansmobilemechanic.com';
 
 export default function Navbar() {

@@ -20,8 +20,8 @@ const STEPS = [
 ];
 
 /* Editable contact details */
-const PHONE_DISPLAY = '(555) 123-4567';
-const PHONE_HREF = '+15551234567';
+const PHONE_DISPLAY = '(513) 846-1958';
+const PHONE_HREF = '+15138461958';
 const EMAIL = 'dylan@dylansmobilemechanic.com';
 const HOURS = 'Mon–Sat, 7am – 7pm';
 
