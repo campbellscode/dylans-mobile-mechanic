@@ -1485,6 +1485,13 @@
 }
 .field__label span { color: var(--clr-olive-txt); }
 
+.field__hint {
+  margin: -3px 0 7px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--clr-text-faint);
+}
+
 .field__input {
   width: 100%;
   min-width: 0;

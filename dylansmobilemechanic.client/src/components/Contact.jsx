@@ -201,6 +201,7 @@ export default function Contact() {
 
                 <div className="field">
                   <label className="field__label" htmlFor="service">Service needed</label>
+                  <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
                   <select id="service" name="service" className="field__input field__select"
                     value={form.service} onChange={set('service')}>
                     <option value="">Not sure yet</option>
