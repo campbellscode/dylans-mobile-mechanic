@@ -27,15 +27,18 @@ namespace DylansMobileMechanic.Server.Controllers
 
         private readonly IRouteDistanceService _routeDistanceService;
         private readonly ServiceAreaOptions _serviceArea;
+        private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ServiceAreaController> _logger;
 
         public ServiceAreaController(
             IRouteDistanceService routeDistanceService,
             IOptions<ServiceAreaOptions> serviceArea,
+            IWebHostEnvironment environment,
             ILogger<ServiceAreaController> logger)
         {
             _routeDistanceService = routeDistanceService;
             _serviceArea = serviceArea.Value;
+            _environment = environment;
             _logger = logger;
         }
 
@@ -63,15 +66,28 @@ namespace DylansMobileMechanic.Server.Controllers
 
             // Distinguish "we're not configured" from "the provider failed" —
             // both look identical to a visitor, but they need different fixes.
-            // Logged as booleans only: never the key, never the address.
+            // Logged/reported as booleans only: never the key, never the
+            // address. IsConfigured resolves IOptions<GoogleMapsOptions> and
+            // _serviceArea resolves IOptions<ServiceAreaOptions> — the same
+            // single DI-bound instances used everywhere else in this action,
+            // so there's one configuration source here, not two.
             var apiKeyConfigured = _routeDistanceService.IsConfigured;
             var originConfigured = !string.IsNullOrWhiteSpace(_serviceArea.OriginAddress);
+            var radiusConfigured = double.IsFinite(_serviceArea.RadiusMiles) && _serviceArea.RadiusMiles > 0;
 
-            if (!apiKeyConfigured || !originConfigured)
+            if (!apiKeyConfigured || !originConfigured || !radiusConfigured)
             {
                 _logger.LogError(
-                    "Service area configuration missing: TraceId={TraceId}, ApiKeyConfigured={ApiKeyConfigured}, OriginConfigured={OriginConfigured}.",
-                    traceId, apiKeyConfigured, originConfigured);
+                    "Service area configuration missing: TraceId={TraceId}, ApiKeyConfigured={ApiKeyConfigured}, OriginConfigured={OriginConfigured}, RadiusConfigured={RadiusConfigured}, Environment={Environment}, ServiceAreaVersion={ServiceAreaVersion}.",
+                    traceId, apiKeyConfigured, originConfigured, radiusConfigured, _environment.EnvironmentName, ServiceAreaVersion);
+
+                // Temporary diagnostic header — safe booleans only, added
+                // solely to identify which resolved option is failing.
+                Response.Headers["X-Service-Area-Config-Status"] =
+                    $"ApiKey={apiKeyConfigured.ToString().ToLowerInvariant()};" +
+                    $"Origin={originConfigured.ToString().ToLowerInvariant()};" +
+                    $"Radius={radiusConfigured.ToString().ToLowerInvariant()}";
+
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new ServiceAreaErrorResponse("route_configuration_unavailable", traceId));
             }
 
