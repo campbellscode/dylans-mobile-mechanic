@@ -2,15 +2,22 @@ import { useState } from 'react';
 import Stage from './Stage';
 import Reveal from './Reveal';
 
-const SERVICE_OPTIONS = [
-  'Diagnostics',
-  'Brake Service',
-  'Battery Replacement',
-  'Oil Change',
-  'Tune-Up',
-  'General Repair',
-  'Pre-Purchase Inspection',
-  'Other',
+/* Customer-facing dropdown shows label only — never a price.
+ * startingPrice/priceType are placeholders (TBD) pending Dylan's actual
+ * rate sheet; wire them into quote prep / admin notifications once set.
+ * priceType is expected to be one of: 'flat' | 'hourly' | 'diagnostic-fee'. */
+const SERVICE_CATALOG = [
+  { value: 'diagnostic', label: 'Diagnostic', startingPrice: null, priceType: null },
+  { value: 'brake-service', label: 'Brake Service', startingPrice: null, priceType: null },
+  { value: 'oil-changes', label: 'Oil Changes', startingPrice: null, priceType: null },
+  { value: 'tune-ups', label: 'Tune-Ups', startingPrice: null, priceType: null },
+  { value: 'ac-service', label: 'A/C Service', startingPrice: null, priceType: null },
+  { value: 'battery-replacement', label: 'Battery Replacement', startingPrice: null, priceType: null },
+  { value: 'alternator-replacement', label: 'Alternator Replacement', startingPrice: null, priceType: null },
+  { value: 'starter-replacement', label: 'Starter Replacement', startingPrice: null, priceType: null },
+  { value: 'cooling-system-repairs', label: 'Cooling System Repairs', startingPrice: null, priceType: null },
+  { value: 'suspension-repairs', label: 'Suspension Repairs', startingPrice: null, priceType: null },
+  { value: 'electrical-diagnosis', label: 'Electrical Diagnosis', startingPrice: null, priceType: null },
 ];
 
 const STEPS = [
@@ -59,13 +66,14 @@ export default function Contact() {
   // No server is wired up yet, so the request is handed to the customer's own
   // mail client rather than pretending it was received.
   const mailHref = (() => {
+    const serviceLabel = SERVICE_CATALOG.find((s) => s.value === form.service)?.label || '—';
     const subject = `Quote request — ${form.vehicle || 'vehicle'}`;
     const body = [
       `Name: ${form.name}`,
       `Phone: ${form.phone}`,
       `Email: ${form.email || '—'}`,
       `Vehicle: ${form.vehicle}`,
-      `Service needed: ${form.service || '—'}`,
+      `Service needed: ${serviceLabel}`,
       '',
       'Details:',
       form.message || '—',
@@ -189,7 +197,7 @@ export default function Contact() {
                   <select id="service" name="service" className="field__input field__select"
                     value={form.service} onChange={set('service')}>
                     <option value="">Not sure yet</option>
-                    {SERVICE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
 
