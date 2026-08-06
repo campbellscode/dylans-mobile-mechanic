@@ -11,8 +11,10 @@ namespace DylansMobileMechanic.Server.Services
     /// Calls Google Maps Platform Routes API (computeRoutes) for real driving
     /// distance/time. Every failure path returns a typed RouteDistanceResult
     /// with a specific RouteDistanceFailure — never null, never a bare bool —
-    /// so the controller (and the logs) can tell a bad key apart from a
-    /// timeout apart from "no route exists."
+    /// so callers (and the logs) can tell a bad key apart from a timeout
+    /// apart from "no route exists." Both public methods (coordinate
+    /// destination for Check My Address, address destination for the quote
+    /// workflow) share one HTTP/parsing/classification path.
     /// </summary>
     public class GoogleRouteDistanceService : IRouteDistanceService
     {
@@ -34,27 +36,52 @@ namespace DylansMobileMechanic.Server.Services
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(_googleMaps.RoutesApiKey);
 
-        public async Task<RouteDistanceResult> GetDrivingDistanceAsync(
+        public Task<RouteDistanceResult> GetDrivingDistanceAsync(
             string originAddress,
             double destinationLatitude,
             double destinationLongitude,
             string traceId,
             CancellationToken cancellationToken)
         {
+            var requestBody = new ComputeRoutesRequest
+            {
+                Origin = new AddressWaypoint { Address = originAddress },
+                Destination = new DestinationWaypoint { Location = new RouteLocation { LatLng = new RouteLatLng { Latitude = destinationLatitude, Longitude = destinationLongitude } } },
+                TravelMode = "DRIVE",
+            };
+
+            return ExecuteComputeRoutesAsync(requestBody, "latLng", traceId, cancellationToken);
+        }
+
+        public Task<RouteDistanceResult> GetDrivingDistanceToAddressAsync(
+            string originAddress,
+            string destinationAddress,
+            string traceId,
+            CancellationToken cancellationToken)
+        {
+            var requestBody = new ComputeRoutesRequest
+            {
+                Origin = new AddressWaypoint { Address = originAddress },
+                Destination = new AddressWaypoint { Address = destinationAddress },
+                TravelMode = "DRIVE",
+            };
+
+            return ExecuteComputeRoutesAsync(requestBody, "address", traceId, cancellationToken);
+        }
+
+        private async Task<RouteDistanceResult> ExecuteComputeRoutesAsync(
+            ComputeRoutesRequest requestBody,
+            string destinationType,
+            string traceId,
+            CancellationToken cancellationToken)
+        {
             if (!IsConfigured)
             {
-                // The controller already gates on IsConfigured before calling,
+                // Both controllers already gate on IsConfigured before calling,
                 // so reaching this normally shouldn't happen — defensive only.
                 _logger.LogError("Google Routes API key is not configured. TraceId={TraceId}.", traceId);
                 return RouteDistanceResult.Fail(RouteDistanceFailure.Unavailable);
             }
-
-            var requestBody = new ComputeRoutesRequest
-            {
-                Origin = new OriginWaypoint { Address = originAddress },
-                Destination = new DestinationWaypoint { Location = new RouteLocation { LatLng = new RouteLatLng { Latitude = destinationLatitude, Longitude = destinationLongitude } } },
-                TravelMode = "DRIVE",
-            };
 
             using var request = new HttpRequestMessage(HttpMethod.Post, ComputeRoutesUrl)
             {
@@ -80,15 +107,15 @@ namespace DylansMobileMechanic.Server.Services
                 // Cancelled, but not by the caller's token — this is the
                 // HttpClient's own configured Timeout firing.
                 _logger.LogWarning(
-                    "Google Routes request timed out. TraceId={TraceId}, Failure={Failure}, OriginType=address, DestinationType=latLng.",
-                    traceId, RouteDistanceFailure.Timeout);
+                    "Google Routes request timed out. TraceId={TraceId}, Failure={Failure}, OriginType=address, DestinationType={DestinationType}.",
+                    traceId, RouteDistanceFailure.Timeout, destinationType);
                 return RouteDistanceResult.Fail(RouteDistanceFailure.Timeout);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogWarning(
-                    "Google Routes network/TLS failure. TraceId={TraceId}, ExceptionType={ExceptionType}, Failure={Failure}, OriginType=address, DestinationType=latLng.",
-                    traceId, ex.GetType().Name, RouteDistanceFailure.Unavailable);
+                    "Google Routes network/TLS failure. TraceId={TraceId}, ExceptionType={ExceptionType}, Failure={Failure}, OriginType=address, DestinationType={DestinationType}.",
+                    traceId, ex.GetType().Name, RouteDistanceFailure.Unavailable, destinationType);
                 return RouteDistanceResult.Fail(RouteDistanceFailure.Unavailable);
             }
 
@@ -96,7 +123,7 @@ namespace DylansMobileMechanic.Server.Services
             {
                 // Only code/status are extracted — error.message is never read
                 // into a variable, since Google can echo request details
-                // (e.g. the origin address) back inside that message.
+                // (e.g. the origin or destination address) back inside it.
                 string? googleStatus = null;
                 try
                 {
@@ -111,7 +138,7 @@ namespace DylansMobileMechanic.Server.Services
                 var failure = ClassifyFailure(response.StatusCode, googleStatus);
                 _logger.LogWarning(
                     "Google Routes request failed. TraceId={TraceId}, HttpStatus={HttpStatus}, GoogleStatus={GoogleStatus}, Failure={Failure}, FieldMaskPresent={FieldMaskPresent}, OriginType={OriginType}, DestinationType={DestinationType}",
-                    traceId, (int)response.StatusCode, googleStatus ?? "(none)", failure, fieldMaskPresent, "address", "latLng");
+                    traceId, (int)response.StatusCode, googleStatus ?? "(none)", failure, fieldMaskPresent, "address", destinationType);
                 return RouteDistanceResult.Fail(failure);
             }
 
@@ -188,18 +215,24 @@ namespace DylansMobileMechanic.Server.Services
         private class ComputeRoutesRequest
         {
             [JsonPropertyName("origin")]
-            public required OriginWaypoint Origin { get; set; }
+            public required AddressWaypoint Origin { get; set; }
 
+            // Either an AddressWaypoint (quote workflow) or a
+            // DestinationWaypoint carrying latLng (Check My Address).
+            // System.Text.Json serializes object-typed members using the
+            // runtime type's own [JsonPropertyName] attributes, so both
+            // shapes come out correctly without a shared base type.
             [JsonPropertyName("destination")]
-            public required DestinationWaypoint Destination { get; set; }
+            public required object Destination { get; set; }
 
             [JsonPropertyName("travelMode")]
             public required string TravelMode { get; set; }
         }
 
-        /// <summary>Dylan's configured service-base address — geocoded by
-        /// Google, not resolved to lat/lng on our side.</summary>
-        private class OriginWaypoint
+        /// <summary>An address-only waypoint — used for Dylan's origin
+        /// always, and for the customer's destination in the quote
+        /// workflow. Geocoded by Google, never resolved to lat/lng here.</summary>
+        private class AddressWaypoint
         {
             [JsonPropertyName("address")]
             public required string Address { get; set; }
@@ -254,8 +287,8 @@ namespace DylansMobileMechanic.Server.Services
             public int Code { get; set; }
 
             // Intentionally no "message" property — Google's human-readable
-            // error message can echo request details (e.g. the configured
-            // origin address), so it's never deserialized, held, or logged.
+            // error message can echo request details (e.g. an address), so
+            // it's never deserialized, held, or logged.
 
             [JsonPropertyName("status")]
             public string? Status { get; set; }

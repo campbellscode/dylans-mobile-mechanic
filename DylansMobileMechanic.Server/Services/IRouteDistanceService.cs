@@ -43,5 +43,14 @@ namespace DylansMobileMechanic.Server.Services
             double destinationLongitude,
             string traceId,
             CancellationToken cancellationToken);
+
+        /// <summary>Same computation, but the destination is a street address
+        /// (the customer's entered service address) rather than coordinates —
+        /// used by the quote workflow, never by Check My Address.</summary>
+        Task<RouteDistanceResult> GetDrivingDistanceToAddressAsync(
+            string originAddress,
+            string destinationAddress,
+            string traceId,
+            CancellationToken cancellationToken);
     }
 }

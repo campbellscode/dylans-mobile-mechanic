@@ -1470,6 +1470,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
+.field-row--3 { grid-template-columns: 1.6fr 0.9fr 1fr; }
 
 .field { margin-bottom: 14px; min-width: 0; }
 .field:last-child { margin-bottom: 0; }
@@ -1541,39 +1542,98 @@
 }
 .quote__note-link:hover { color: var(--clr-olive-txt); }
 
-/* ---- Ready-to-send state (no server is connected yet) ---- */
-.ready { text-align: center; padding: 12px 0 4px; }
-.ready__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 18px;
-  color: var(--clr-olive-txt);
-  box-shadow: inset 0 0 0 1px var(--line-olive);
-  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
-}
-.ready__mark svg { width: 22px; height: 22px; }
-.ready__title { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
-.ready__desc {
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--clr-text-muted);
-  max-width: 40ch;
-  margin: 0 auto 24px;
-}
-.ready__actions { display: grid; gap: 12px; }
-.ready__back {
-  padding: 10px;
-  font-family: var(--font);
-  font-size: 13px;
+.quote__pricing-notice {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
   color: var(--clr-text-faint);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color var(--ease);
+  text-align: center;
 }
-.ready__back:hover { color: var(--clr-text); }
+
+/* ---- Quote estimate / error panels — appear below the submit button,
+   the form itself stays visible and editable throughout ---- */
+.quote-estimate,
+.quote-error {
+  margin-top: 22px;
+  padding: 20px 22px 22px;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 0 1px var(--line-olive);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.quote-estimate--outside,
+.quote-error {
+  box-shadow: inset 0 0 0 1px var(--line-purple);
+}
+
+.quote-estimate__eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--clr-olive-txt);
+}
+.quote-estimate__eyebrow--muted { color: var(--clr-purple-txt); }
+
+.quote-estimate__rows { display: grid; gap: 0; margin: 0 0 14px; }
+.quote-estimate__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.quote-estimate__row dt { color: var(--clr-text-muted); }
+.quote-estimate__row dd { margin: 0; color: var(--clr-white); text-align: right; }
+.quote-estimate__row--total {
+  border-bottom: none;
+  padding-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.quote-estimate__row--total dt,
+.quote-estimate__row--total dd { color: var(--clr-white); }
+
+.quote-estimate__meta,
+.quote-estimate__message {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--clr-text);
+  margin-bottom: 10px;
+}
+.quote-estimate__disclaimer {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--clr-text-faint);
+  margin-bottom: 4px;
+}
+.quote-estimate__verify {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--clr-olive-txt);
+  margin-bottom: 18px;
+}
+.quote-estimate--outside .quote-estimate__verify { color: var(--clr-purple-txt); }
+
+.quote-estimate__send { margin-top: 4px; }
+
+.quote-error__message {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--clr-text);
+  margin-bottom: 16px;
+}
+.quote-error__contact {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--clr-text-muted);
+  text-align: center;
+}
 
 @media (max-width: 960px) {
   .quote__inner { grid-template-columns: minmax(0, 1fr); gap: 40px; }

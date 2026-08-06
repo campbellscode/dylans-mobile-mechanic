@@ -137,7 +137,7 @@ export default function ServiceArea() {
                   <span className="status-dot" aria-hidden="true" />
                   Within Service Area
                 </span>
-                <p className="check-address__message">Great news! You&rsquo;re within our standard service area.</p>
+                <p className="check-address__message">Great news! You&rsquo;re within our standard {result.radiusMiles}-mile service area.</p>
                 <p className="check-address__detail">{result.distanceMiles} driving miles away</p>
                 <p className="check-address__detail">About {result.durationMinutes} minutes</p>
                 <a href="#contact" className="btn btn--primary check-address__cta">Request a Quote</a>

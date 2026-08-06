@@ -8,6 +8,12 @@ namespace DylansMobileMechanic.Server.Controllers
 {
     public record ServiceAreaCheckRequest(double Latitude, double Longitude);
 
+    /// <summary>
+    /// Check My Address is deliberately minimal: a yes/no service-area answer
+    /// plus the one-way distance/time that produced it. No fee or pricing
+    /// math belongs here — that's the separate Request My Quote workflow,
+    /// which runs only after the customer submits the quote form.
+    /// </summary>
     public record ServiceAreaCheckResponse(
         bool WithinServiceArea,
         double DistanceMiles,

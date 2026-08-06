@@ -2,30 +2,29 @@ import { useState } from 'react';
 import Stage from './Stage';
 import Reveal from './Reveal';
 
-/* Customer-facing dropdown shows label only — never a price. Pricing here
- * is internal (quote prep / admin notifications / future quoting logic),
- * not rendered in the <select>. priceType: 'flat' | 'hourly'.
- * Note: all "flat" starting prices are labor only — parts are quoted
- * separately, and final pricing depends on the vehicle, parts required,
- * accessibility, rust/corrosion, and actual repair requirements. */
+/* Customer-facing dropdown shows label only — never a price. This exists
+ * purely to render the <select> in the right order; it is never trusted
+ * for pricing. The server holds the one authoritative catalog
+ * (DylansMobileMechanic.Server/Pricing/ServicePricingCatalog.cs) and
+ * calculates every dollar amount shown in the estimate panel. */
 const SERVICE_CATALOG = [
-  { value: 'diagnostic', label: 'Diagnostic', startingPrice: 100, priceType: 'flat' },
-  { value: 'brake-service', label: 'Brake Service', startingPrice: 150, priceType: 'flat' },
-  { value: 'oil-changes', label: 'Oil Changes', startingPrice: 89.99, priceType: 'flat' },
-  { value: 'tune-ups', label: 'Tune-Ups', startingPrice: 150, priceType: 'flat' },
-  { value: 'ac-service', label: 'A/C Service', startingPrice: 125, priceType: 'flat' },
-  { value: 'battery-replacement', label: 'Battery Replacement', startingPrice: 50, priceType: 'flat' },
-  { value: 'alternator-replacement', label: 'Alternator Replacement', startingPrice: 200, priceType: 'flat' },
-  { value: 'starter-replacement', label: 'Starter Replacement', startingPrice: 200, priceType: 'flat' },
-  { value: 'cooling-system-repairs', label: 'Cooling System Repairs', startingPrice: 100, priceType: 'flat' },
-  { value: 'suspension-repairs', label: 'Suspension Repairs', startingPrice: 150, priceType: 'flat' },
-  { value: 'electrical-diagnosis', label: 'Electrical Diagnosis', startingPrice: 100, priceType: 'hourly' },
-  { value: 'other', label: 'Other', startingPrice: null, priceType: null },
+  { value: 'diagnostic', label: 'Diagnostic' },
+  { value: 'brake-service', label: 'Brake Service' },
+  { value: 'oil-changes', label: 'Oil Changes' },
+  { value: 'tune-ups', label: 'Tune-Ups' },
+  { value: 'ac-service', label: 'A/C Service' },
+  { value: 'battery-replacement', label: 'Battery Replacement' },
+  { value: 'alternator-replacement', label: 'Alternator Replacement' },
+  { value: 'starter-replacement', label: 'Starter Replacement' },
+  { value: 'cooling-system-repairs', label: 'Cooling System Repairs' },
+  { value: 'suspension-repairs', label: 'Suspension Repairs' },
+  { value: 'electrical-diagnosis', label: 'Electrical Diagnosis' },
+  { value: 'other', label: 'Other' },
 ];
 
-/* General rates, not tied to one service — kept internal, same as above. */
-const LABOR_RATE_PER_HOUR = 100;
-const MOBILE_SERVICE_FEE_STARTING = 25;
+/* The empty placeholder option maps to this stable code before the
+ * quote-calculate request is sent. Must match the server catalog. */
+const NOT_SURE_YET_CODE = 'not-sure-yet';
 
 const STEPS = [
   { title: 'Tell us about the vehicle', desc: 'Year, make, model, and what it’s doing.' },
@@ -38,6 +37,24 @@ const PHONE_DISPLAY = '(513) 846-1958';
 const PHONE_HREF = '+15138461958';
 const EMAIL = 'dyfrey94@gmail.com';
 const HOURS = 'Mon-Fri, 4:30pm-12am';
+
+/* Fields that invalidate a computed estimate when changed */
+const ESTIMATE_FIELDS = ['service', 'serviceAddress', 'serviceCity', 'serviceState', 'servicePostalCode'];
+
+const QUOTE_ERROR_MESSAGES = {
+  invalid_service_code: 'Please choose a service from the list and try again.',
+  invalid_address: "We couldn't process that address — please check it and try again.",
+  route_configuration_unavailable: 'The automatic quote calculator is unavailable right now.',
+  route_provider_unauthorized: 'The automatic quote calculator is unavailable right now.',
+  route_provider_invalid_request: "We couldn't process that address — please check it and try again.",
+  route_provider_rate_limited: 'The automatic quote calculator is busy right now. Please try again shortly.',
+  route_service_timeout: 'The automatic quote calculator timed out. Please try again.',
+  route_provider_unavailable: 'The automatic quote calculator is unavailable right now.',
+  route_not_found: "We couldn't find a driving route to that address.",
+  route_provider_invalid_response: 'The automatic quote calculator is unavailable right now.',
+  network_error: "We couldn't reach our server — check your connection and try again.",
+  unknown_error: 'Something went wrong calculating your estimate.',
+};
 
 const PhoneIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -60,33 +77,135 @@ const ClockIcon = () => (
 export default function Contact() {
   const [form, setForm] = useState({
     name: '', phone: '', email: '', vehicle: '', service: '', message: '',
+    serviceAddress: '', serviceCity: '', serviceState: '', servicePostalCode: '',
   });
-  const [ready, setReady] = useState(false);
 
-  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  // 'form' | 'calculating' | 'estimate' | 'error'
+  const [quoteState, setQuoteState] = useState('form');
+  const [estimate, setEstimate] = useState(null);
+  const [quoteErrorCode, setQuoteErrorCode] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setReady(true);
+  const set = (field) => (e) => {
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [field]: value }));
+    // Editing anything the estimate was calculated from invalidates it —
+    // no separate "recalculate" button, just re-submit when ready.
+    if (ESTIMATE_FIELDS.includes(field) && quoteState !== 'form') {
+      setQuoteState('form');
+      setEstimate(null);
+      setQuoteErrorCode(null);
+    }
   };
 
-  // No server is wired up yet, so the request is handed to the customer's own
-  // mail client rather than pretending it was received.
+  const serviceLabel = SERVICE_CATALOG.find((s) => s.value === form.service)?.label || 'Not sure yet';
+  const serviceAddressLine = [form.serviceAddress, form.serviceCity, form.serviceState, form.servicePostalCode]
+    .filter(Boolean).join(', ') || '—';
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (quoteState === 'calculating') return;
+
+    setQuoteState('calculating');
+    setEstimate(null);
+    setQuoteErrorCode(null);
+
+    try {
+      const response = await fetch('/api/quote/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceCode: form.service || NOT_SURE_YET_CODE,
+          streetAddress: form.serviceAddress,
+          city: form.serviceCity,
+          state: form.serviceState,
+          postalCode: form.servicePostalCode,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorCode = 'unknown_error';
+        try {
+          const errorBody = await response.json();
+          errorCode = errorBody?.error ?? errorCode;
+        } catch {
+          // Response wasn't JSON — leave errorCode as unknown_error.
+        }
+        console.error(`Quote calculation failed: HTTP ${response.status} (${errorCode})`);
+        setQuoteErrorCode(errorCode);
+        setQuoteState('error');
+        return;
+      }
+
+      const data = await response.json();
+      setEstimate(data);
+      setQuoteState('estimate');
+    } catch (err) {
+      console.error('Quote calculation request failed before reaching the server:', err);
+      setQuoteErrorCode('network_error');
+      setQuoteState('error');
+    }
+  };
+
+  // Base request details every "send" email includes, regardless of outcome.
+  const baseMailLines = () => [
+    `Name: ${form.name}`,
+    `Phone: ${form.phone}`,
+    `Email: ${form.email || '—'}`,
+    `Vehicle: ${form.vehicle}`,
+    `Service needed: ${serviceLabel}`,
+    `Service address: ${serviceAddressLine}`,
+    '',
+    'Details:',
+    form.message || '—',
+  ];
+
+  // Only meaningful once quoteState === 'estimate' — this is what "Send to
+  // Dylan" links to. The mailto body is fully editable by the customer, so
+  // this is explicitly labeled as an automated, unverified estimate.
   const mailHref = (() => {
-    const serviceLabel = SERVICE_CATALOG.find((s) => s.value === form.service)?.label || '—';
     const subject = `Quote request — ${form.vehicle || 'vehicle'}`;
-    const body = [
-      `Name: ${form.name}`,
-      `Phone: ${form.phone}`,
-      `Email: ${form.email || '—'}`,
-      `Vehicle: ${form.vehicle}`,
-      `Service needed: ${serviceLabel}`,
-      '',
-      'Details:',
-      form.message || '—',
-    ].join('\n');
-    return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const lines = [...baseMailLines()];
+
+    if (estimate) {
+      lines.push('', 'Automated preliminary estimate:', '');
+      lines.push(`Service needed: ${estimate.serviceName}`);
+      lines.push(`Service address: ${serviceAddressLine}`);
+      lines.push(`Pricing guidance: ${estimate.pricingGuidance}`);
+      lines.push(`One-way driving distance: ${estimate.oneWayDistanceMiles} miles`);
+      lines.push(`Estimated one-way driving time: ${estimate.oneWayDurationMinutes} minutes`);
+
+      if (estimate.withinStandardServiceArea) {
+        lines.push(`Round-trip billable mileage: ${estimate.roundTripBillableMiles} miles`);
+        lines.push(`Mobile service fee: $${estimate.travelFee.toFixed(2)}`);
+        if (estimate.estimatedStartingSubtotal != null) {
+          lines.push(`Estimated starting subtotal: $${estimate.estimatedStartingSubtotal.toFixed(2)}`);
+        }
+      } else {
+        lines.push('Mobile service fee: Pending manual review');
+        lines.push('Estimated starting subtotal: Not available pending manual review');
+      }
+
+      lines.push(`Standard labor rate: $${estimate.standardLaborRatePerHour.toFixed(0)}/hour`);
+      lines.push('Parts: Quoted separately');
+      lines.push(`Within standard service area: ${estimate.withinStandardServiceArea ? 'Yes' : 'No'}`);
+      if (!estimate.withinStandardServiceArea) {
+        lines.push('Custom travel quote required: Yes');
+      }
+      lines.push('', 'Estimate must be verified by Dylan before acceptance.');
+    }
+
+    return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
   })();
+
+  // Fallback path when the automated calculation fails — no guessed
+  // mileage or pricing, no claim about being in the service area.
+  const manualReviewMailHref = (() => {
+    const subject = `Quote request — ${form.vehicle || 'vehicle'}`;
+    const lines = [...baseMailLines(), '', 'Automated estimate unavailable — manual review required'];
+    return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
+  })();
+
+  const submitBusy = quoteState === 'calculating';
 
   return (
     <section id="contact" className="section section--routed section--end quote">
@@ -140,91 +259,181 @@ export default function Contact() {
         </div>
 
         {/* ---------- The form: settles into place as one panel, fields
-            stagger lightly inside it once it's in view ---------- */}
+            stagger lightly inside it once it's in view. Stays visible and
+            editable throughout — the estimate/error panel appears below
+            the submit button rather than replacing the form. ---------- */}
         <Reveal variant="lock" delay={80} className="quote__form panel">
           <span className="edge" aria-hidden="true" />
 
-          {ready ? (
-            <div className="ready" role="status">
-              <span className="ready__mark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </span>
-              <h3 className="ready__title">Your request is ready to send</h3>
-              <p className="ready__desc">
-                Send it straight to Dylan below, or call now if the vehicle needs attention today.
-              </p>
-              <div className="ready__actions">
-                <a href={mailHref} className="btn btn--primary btn--lg btn--block">Send to Dylan</a>
-                <a href={`tel:${PHONE_HREF}`} className="btn btn--ghost btn--block">
-                  <PhoneIcon />Call {PHONE_DISPLAY}
-                </a>
-                <button type="button" className="ready__back" onClick={() => setReady(false)}>
-                  Edit my details
-                </button>
+          <form onSubmit={handleSubmit} noValidate={false}>
+            <Reveal as="fieldset" variant="rise" index={0} step={60} className="fieldset">
+              <legend className="fieldset__legend">Your contact</legend>
+
+              <div className="field-row">
+                <div className="field">
+                  <label className="field__label" htmlFor="name">Full name <span aria-hidden="true">*</span></label>
+                  <input id="name" name="name" className="field__input" type="text" required
+                    autoComplete="name" value={form.name} onChange={set('name')} />
+                </div>
+                <div className="field">
+                  <label className="field__label" htmlFor="phone">Phone <span aria-hidden="true">*</span></label>
+                  <input id="phone" name="phone" className="field__input" type="tel" required
+                    autoComplete="tel" value={form.phone} onChange={set('phone')} />
+                </div>
               </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="email">Email</label>
+                <input id="email" name="email" className="field__input" type="email"
+                  autoComplete="email" value={form.email} onChange={set('email')} />
+              </div>
+            </Reveal>
+
+            <Reveal as="fieldset" variant="rise" index={1} step={60} className="fieldset">
+              <legend className="fieldset__legend">Your vehicle</legend>
+
+              <div className="field">
+                <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
+                <input id="vehicle" name="vehicle" className="field__input" type="text" required
+                  placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="service">Service needed</label>
+                <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
+                <select id="service" name="service" className="field__input field__select"
+                  value={form.service} onChange={set('service')}>
+                  <option value="">Not sure yet</option>
+                  {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
+                <textarea id="message" name="message" className="field__input field__textarea" rows={4}
+                  placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
+              </div>
+            </Reveal>
+
+            <Reveal as="fieldset" variant="rise" index={2} step={60} className="fieldset">
+              <legend className="fieldset__legend">Service address</legend>
+
+              <div className="field">
+                <label className="field__label" htmlFor="serviceAddress">Street address <span aria-hidden="true">*</span></label>
+                <input id="serviceAddress" name="serviceAddress" className="field__input" type="text" required
+                  autoComplete="street-address" placeholder="123 Main St" value={form.serviceAddress} onChange={set('serviceAddress')} />
+              </div>
+
+              <div className="field-row field-row--3">
+                <div className="field">
+                  <label className="field__label" htmlFor="serviceCity">City <span aria-hidden="true">*</span></label>
+                  <input id="serviceCity" name="serviceCity" className="field__input" type="text" required
+                    autoComplete="address-level2" value={form.serviceCity} onChange={set('serviceCity')} />
+                </div>
+                <div className="field">
+                  <label className="field__label" htmlFor="serviceState">State <span aria-hidden="true">*</span></label>
+                  <input id="serviceState" name="serviceState" className="field__input" type="text" required
+                    autoComplete="address-level1" placeholder="OH" maxLength={2} value={form.serviceState} onChange={set('serviceState')} />
+                </div>
+                <div className="field">
+                  <label className="field__label" htmlFor="servicePostalCode">ZIP code <span aria-hidden="true">*</span></label>
+                  <input id="servicePostalCode" name="servicePostalCode" className="field__input" type="text" required
+                    autoComplete="postal-code" inputMode="numeric" placeholder="45202" value={form.servicePostalCode} onChange={set('servicePostalCode')} />
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal as="div" variant="rise" index={3} step={60} className="quote__submit">
+              <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={submitBusy}>
+                {submitBusy && <span className="check-address__spinner" aria-hidden="true" />}
+                {submitBusy ? 'Calculating Your Quote…' : 'Request My Quote'}
+              </button>
+              <p className="quote__note">
+                <span aria-hidden="true">*</span> Required. Prefer to talk?{' '}
+                <a href={`tel:${PHONE_HREF}`} className="quote__note-link contact-link">Call {PHONE_DISPLAY}</a>.
+              </p>
+              <p className="quote__pricing-notice">
+                Labor rate: $100/hour. Parts are quoted separately. The mobile service fee is calculated
+                from round-trip driving mileage, with a $25 minimum. Final pricing depends on the vehicle,
+                parts required, accessibility, rust or corrosion, and actual repair requirements.
+              </p>
+            </Reveal>
+
+            <div aria-live="polite">
+              {quoteState === 'estimate' && estimate && (
+                <div className={`quote-estimate${estimate.withinStandardServiceArea ? '' : ' quote-estimate--outside'}`}>
+                  <span className="quote-estimate__eyebrow">Automated Preliminary Estimate</span>
+
+                  <dl className="quote-estimate__rows">
+                    <div className="quote-estimate__row">
+                      <dt>Service</dt><dd>{estimate.serviceName}</dd>
+                    </div>
+                    <div className="quote-estimate__row">
+                      <dt>Pricing guidance</dt><dd>{estimate.pricingGuidance}</dd>
+                    </div>
+                    <div className="quote-estimate__row">
+                      <dt>One-way driving distance</dt><dd>{estimate.oneWayDistanceMiles} miles</dd>
+                    </div>
+                    <div className="quote-estimate__row">
+                      <dt>Estimated one-way driving time</dt><dd>About {estimate.oneWayDurationMinutes} minutes</dd>
+                    </div>
+
+                    {estimate.withinStandardServiceArea ? (
+                      <>
+                        <div className="quote-estimate__row">
+                          <dt>Round-trip billable mileage</dt><dd>{estimate.roundTripBillableMiles} miles</dd>
+                        </div>
+                        <div className="quote-estimate__row">
+                          <dt>Mobile service fee</dt><dd>${estimate.travelFee.toFixed(2)}</dd>
+                        </div>
+                        {estimate.estimatedStartingSubtotal != null && (
+                          <div className="quote-estimate__row quote-estimate__row--total">
+                            <dt>Estimated starting subtotal</dt><dd>${estimate.estimatedStartingSubtotal.toFixed(2)}</dd>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="quote-estimate__row">
+                        <dt>Service area</dt><dd>Outside our standard area</dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {estimate.withinStandardServiceArea ? (
+                    <p className="quote-estimate__meta">
+                      Standard labor rate: ${estimate.standardLaborRatePerHour.toFixed(0)}/hour. Parts are quoted separately.
+                    </p>
+                  ) : (
+                    <p className="quote-estimate__message">{estimate.message}</p>
+                  )}
+
+                  <p className="quote-estimate__disclaimer">
+                    Final pricing depends on the vehicle, parts required, accessibility, rust or corrosion,
+                    and actual repair requirements.
+                  </p>
+                  <p className="quote-estimate__verify">Estimate must be verified by Dylan before acceptance.</p>
+
+                  <a href={mailHref} className="btn btn--primary btn--lg btn--block quote-estimate__send">Send to Dylan</a>
+                </div>
+              )}
+
+              {quoteState === 'error' && (
+                <div className="quote-error" role="alert">
+                  <span className="quote-estimate__eyebrow quote-estimate__eyebrow--muted">Estimate Unavailable</span>
+                  <p className="quote-error__message">
+                    {QUOTE_ERROR_MESSAGES[quoteErrorCode] || QUOTE_ERROR_MESSAGES.unknown_error}
+                  </p>
+                  <a href={manualReviewMailHref} className="btn btn--ghost btn--block quote-estimate__send">Send for Manual Review</a>
+                  <p className="quote-error__contact">
+                    Or reach Dylan directly:{' '}
+                    <a href={`tel:${PHONE_HREF}`} className="contact-link">{PHONE_DISPLAY}</a>
+                    {' '}&middot;{' '}
+                    <a href={`mailto:${EMAIL}`} className="contact-link">{EMAIL}</a>
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} noValidate={false}>
-              <Reveal as="fieldset" variant="rise" index={0} step={60} className="fieldset">
-                <legend className="fieldset__legend">Your contact</legend>
-
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field__label" htmlFor="name">Full name <span aria-hidden="true">*</span></label>
-                    <input id="name" name="name" className="field__input" type="text" required
-                      autoComplete="name" value={form.name} onChange={set('name')} />
-                  </div>
-                  <div className="field">
-                    <label className="field__label" htmlFor="phone">Phone <span aria-hidden="true">*</span></label>
-                    <input id="phone" name="phone" className="field__input" type="tel" required
-                      autoComplete="tel" value={form.phone} onChange={set('phone')} />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="field__label" htmlFor="email">Email</label>
-                  <input id="email" name="email" className="field__input" type="email"
-                    autoComplete="email" value={form.email} onChange={set('email')} />
-                </div>
-              </Reveal>
-
-              <Reveal as="fieldset" variant="rise" index={1} step={60} className="fieldset">
-                <legend className="fieldset__legend">Your vehicle</legend>
-
-                <div className="field">
-                  <label className="field__label" htmlFor="vehicle">Year, make and model <span aria-hidden="true">*</span></label>
-                  <input id="vehicle" name="vehicle" className="field__input" type="text" required
-                    placeholder="2018 Honda Accord" value={form.vehicle} onChange={set('vehicle')} />
-                </div>
-
-                <div className="field">
-                  <label className="field__label" htmlFor="service">Service needed</label>
-                  <p className="field__hint">Starting prices vary by service — labor rate is $100/hr. Parts are quoted separately.</p>
-                  <select id="service" name="service" className="field__input field__select"
-                    value={form.service} onChange={set('service')}>
-                    <option value="">Not sure yet</option>
-                    {SERVICE_CATALOG.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
-                </div>
-
-                <div className="field">
-                  <label className="field__label" htmlFor="message">What&rsquo;s going on?</label>
-                  <textarea id="message" name="message" className="field__input field__textarea" rows={4}
-                    placeholder="Noises, warning lights, when it started…" value={form.message} onChange={set('message')} />
-                </div>
-              </Reveal>
-
-              <Reveal as="div" variant="rise" index={2} step={60} className="quote__submit">
-                <button type="submit" className="btn btn--primary btn--lg btn--block">Request My Quote</button>
-                <p className="quote__note">
-                  <span aria-hidden="true">*</span> Required. Prefer to talk?{' '}
-                  <a href={`tel:${PHONE_HREF}`} className="quote__note-link contact-link">Call {PHONE_DISPLAY}</a>.
-                </p>
-              </Reveal>
-            </form>
-          )}
+          </form>
         </Reveal>
       </div>
     </section>

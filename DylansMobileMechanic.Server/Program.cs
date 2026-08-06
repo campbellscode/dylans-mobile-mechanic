@@ -27,12 +27,23 @@ namespace DylansMobileMechanic.Server
 
             // "Check My Address" is a public, anonymous, low-cost-per-call
             // endpoint (billed Google Routes API usage) — keep it modest.
+            // "Request My Quote" is a separate, slightly stricter policy —
+            // its own billed Google call plus the fact that it's the more
+            // "final" action — kept independent so tuning one never affects
+            // the other.
             builder.Services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
                 options.AddFixedWindowLimiter("service-area-check", limiterOptions =>
                 {
                     limiterOptions.PermitLimit = 10;
+                    limiterOptions.Window = TimeSpan.FromMinutes(1);
+                    limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    limiterOptions.QueueLimit = 0;
+                });
+                options.AddFixedWindowLimiter("quote-calculate", limiterOptions =>
+                {
+                    limiterOptions.PermitLimit = 8;
                     limiterOptions.Window = TimeSpan.FromMinutes(1);
                     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                     limiterOptions.QueueLimit = 0;
