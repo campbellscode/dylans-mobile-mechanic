@@ -66,8 +66,8 @@ export default function Footer() {
         <Reveal as="div" variant="rise" index={2} step={80} className="foot__col">
           <h2 className="foot__col-title">Dispatch</h2>
           <ul className="foot__links">
-            <li><a href={`tel:${PHONE_HREF}`}>{PHONE_DISPLAY}</a></li>
-            <li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
+            <li><a href={`tel:${PHONE_HREF}`} className="contact-link">{PHONE_DISPLAY}</a></li>
+            <li><a href={`mailto:${EMAIL}`} className="contact-link">{EMAIL}</a></li>
           </ul>
           <p className="foot__meta">Mon-Fri, 4:30pm-12am</p>
         </Reveal>

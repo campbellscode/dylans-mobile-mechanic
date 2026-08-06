@@ -104,14 +104,14 @@ export default function Contact() {
               <span className="quote__contact-icon"><PhoneIcon /></span>
               <span>
                 <span className="quote__contact-label">Phone</span>
-                <a href={`tel:${PHONE_HREF}`} className="quote__contact-value quote__contact-value--link">{PHONE_DISPLAY}</a>
+                <a href={`tel:${PHONE_HREF}`} className="quote__contact-value quote__contact-value--link contact-link">{PHONE_DISPLAY}</a>
               </span>
             </li>
             <li className="quote__contact-item">
               <span className="quote__contact-icon"><MailIcon /></span>
               <span>
                 <span className="quote__contact-label">Email</span>
-                <a href={`mailto:${EMAIL}`} className="quote__contact-value quote__contact-value--link">{EMAIL}</a>
+                <a href={`mailto:${EMAIL}`} className="quote__contact-value quote__contact-value--link contact-link">{EMAIL}</a>
               </span>
             </li>
             <li className="quote__contact-item">
@@ -204,7 +204,7 @@ export default function Contact() {
                 <button type="submit" className="btn btn--primary btn--lg btn--block">Request My Quote</button>
                 <p className="quote__note">
                   <span aria-hidden="true">*</span> Required. Prefer to talk?{' '}
-                  <a href={`tel:${PHONE_HREF}`} className="quote__note-link">Call {PHONE_DISPLAY}</a>.
+                  <a href={`tel:${PHONE_HREF}`} className="quote__note-link contact-link">Call {PHONE_DISPLAY}</a>.
                 </p>
               </Reveal>
             </form>

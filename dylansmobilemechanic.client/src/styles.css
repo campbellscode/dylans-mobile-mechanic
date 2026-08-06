@@ -1459,8 +1459,6 @@
 }
 .quote__note-link {
   color: var(--clr-text-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 .quote__note-link:hover { color: var(--clr-olive-txt); }
 

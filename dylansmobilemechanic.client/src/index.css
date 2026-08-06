@@ -370,6 +370,26 @@ section[id] { scroll-margin-top: 84px; }
 .reveal-inline { display: inline-block; max-width: 100%; }
 .reveal-inline--block { display: block; width: 100%; }
 
+/* Shared underline treatment for inline phone/email text links (not
+   icon buttons): hover/focus-only where hover exists, always-on for
+   touch, since there's no hover state to reveal it there. Only sets
+   decoration — each link keeps its own color/hover-color rules. */
+.contact-link {
+  text-decoration-line: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: currentColor;
+}
+@media (hover: hover) and (pointer: fine) {
+  .contact-link:hover,
+  .contact-link:focus-visible {
+    text-decoration-line: underline;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .contact-link { text-decoration-line: underline; }
+}
+
 /* Status Activation — a status light or step node lights up once, a
    beat after its container settles. `backwards` fill so hover states
    (which also touch box-shadow) resume normal control afterward. */
